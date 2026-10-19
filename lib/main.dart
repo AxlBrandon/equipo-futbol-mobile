@@ -1,6 +1,10 @@
 import 'dart:convert';
+
+import 'package:equipo_futbol_mobile/services/team_search_service.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:image_picker/image_picker.dart';
+
 import 'models/match_model.dart';
 import 'models/player.dart';
 import 'services/team_state.dart';
@@ -18,6 +22,16 @@ class LiverpoolApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Liverpool F.C.',
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: const [
+        Locale('es', 'MX'),
+        Locale('en', 'US'),
+      ],
+      locale: const Locale('es', 'MX'),
       theme: ThemeData(
         scaffoldBackgroundColor: const Color(0xFFF6F8FB),
         fontFamily: 'Roboto',
@@ -80,7 +94,10 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           backgroundColor: Colors.white,
           elevation: 0,
           type: BottomNavigationBarType.fixed,
-          selectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+          selectedLabelStyle: const TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 12,
+          ),
           unselectedLabelStyle: const TextStyle(fontSize: 12),
           onTap: (index) {
             setState(() {
@@ -137,7 +154,9 @@ class _HomeScreenState extends State<HomeScreen> {
     ];
 
     // En Inicio mostramos los jugadores activos
-    final activePlayers = _state.players.where((p) => p.status == 'ACTIVO').toList();
+    final activePlayers = _state.players
+        .where((p) => p.status == 'ACTIVO')
+        .toList();
 
     return Scaffold(
       backgroundColor: const Color(0xFFF6F8FB),
@@ -319,7 +338,10 @@ class _HomeScreenState extends State<HomeScreen> {
             height: 76,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              border: Border.all(color: const Color(0xFF00E5FF).withValues(alpha: 0.8), width: 1.5),
+              border: Border.all(
+                color: const Color(0xFF00E5FF).withValues(alpha: 0.8),
+                width: 1.5,
+              ),
               gradient: SweepGradient(
                 colors: [
                   const Color(0xFF00E5FF),
@@ -338,7 +360,8 @@ class _HomeScreenState extends State<HomeScreen> {
               width: 58,
               height: 58,
               fit: BoxFit.contain,
-              errorBuilder: (_, _, _) => const Icon(Icons.shield, color: Colors.white, size: 40),
+              errorBuilder: (_, _, _) =>
+                  const Icon(Icons.shield, color: Colors.white, size: 40),
             ),
           ),
         ],
@@ -346,183 +369,215 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // Tarjeta "Próximo Partido" interactiva
+  // Tarjeta "Próximo Partido" interactiva — estilo de la plantilla
   Widget _buildNextMatchCard() {
     final match = _state.currentMatch;
     final confirmedCount = _state.rsvpMap.values.where((v) => v).length;
 
     return InkWell(
-      borderRadius: BorderRadius.circular(22),
+      borderRadius: BorderRadius.circular(20),
       onTap: () => _showRsvpModal(context),
       child: Container(
         width: double.infinity,
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(22),
-          gradient: const LinearGradient(
-            colors: [
-              Color(0xFF0F172A),
-              Color(0xFF1E1B4B),
-              Color(0xFF0F172A),
-            ],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
+          borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.22),
-              blurRadius: 14,
-              offset: const Offset(0, 5),
+              color: const Color(0xFFD31027).withValues(alpha: 0.35),
+              blurRadius: 18,
+              offset: const Offset(0, 6),
             ),
           ],
         ),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(22),
+          borderRadius: BorderRadius.circular(20),
           child: Stack(
             children: [
-              // Botón rápido en la esquina superior derecha para agendar/cambiar partido
+              // ── Fondo: gradiente rojo/naranja como la plantilla ──
+              Container(
+                height: 170,
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      Color(0xFFB91C1C),
+                      Color(0xFFEF4444),
+                      Color(0xFFFF6B35),
+                      Color(0xFFEF4444),
+                      Color(0xFFB91C1C),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    stops: [0.0, 0.25, 0.5, 0.75, 1.0],
+                  ),
+                ),
+              ),
+              // ── Rayas diagonales blancas estilo plantilla ──
+              Positioned.fill(
+                child: CustomPaint(
+                  painter: _DiagonalStripesPainter(),
+                ),
+              ),
+              // ── Botón editar esquina superior derecha ──
               Positioned(
-                top: 8,
-                right: 8,
+                top: 4,
+                right: 4,
                 child: IconButton(
-                  icon: const Icon(Icons.edit_calendar, color: Color(0xFF00E5FF), size: 20),
+                  icon: const Icon(
+                    Icons.edit_calendar,
+                    color: Colors.white70,
+                    size: 18,
+                  ),
                   tooltip: 'Cambiar o Agendar Partido',
                   onPressed: () => _showNewMatchDialog(context),
                 ),
               ),
-
-              // Contenido
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              // ── Contenido centrado ──
+              SizedBox(
+                height: 170,
                 child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Text(
-                      'Próximo Partido',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 0.3,
+                    // Badge "Próximo Partido"
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 14, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.3),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: const Text(
+                        'Próximo Partido',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 0.5,
+                        ),
                       ),
                     ),
-                    const SizedBox(height: 2),
+                    const SizedBox(height: 3),
+                    // Fecha con hora
                     Text(
-                      '${match.matchDate} • ${match.matchLocation}',
+                      match.matchDate,
                       textAlign: TextAlign.center,
                       style: const TextStyle(
-                        color: Color(0xFF94A3B8),
-                        fontSize: 11.5,
+                        color: Colors.white70,
+                        fontSize: 11,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 10),
+                    // Logos y nombres de equipos
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        // Escudo Liverpool oficial
-                        Container(
-                          width: 48,
-                          height: 48,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: Colors.white,
-                            boxShadow: [
-                              BoxShadow(
-                                color: const Color(0xFFD31027).withValues(alpha: 0.4),
-                                blurRadius: 10,
-                                spreadRadius: 1,
-                              ),
-                            ],
-                          ),
-                          padding: const EdgeInsets.all(4),
-                          child: Image.asset(
-                            'assets/images/liverpool_logo.png',
-                            fit: BoxFit.contain,
-                            errorBuilder: (_, _, _) => const Icon(Icons.shield, color: Color(0xFFD31027)),
-                          ),
-                        ),
-
-                        // Nombres de los equipos y "vs"
+                        // Liverpool
                         Column(
+                          mainAxisSize: MainAxisSize.min,
                           children: [
+                            Container(
+                              width: 56,
+                              height: 56,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: Colors.white,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.3),
+                                    blurRadius: 8,
+                                  ),
+                                ],
+                              ),
+                              padding: const EdgeInsets.all(4),
+                              child: Image.asset(
+                                'assets/images/liverpool_logo.png',
+                                fit: BoxFit.contain,
+                                errorBuilder: (_, _, _) => const Icon(
+                                  Icons.shield,
+                                  color: Color(0xFFD31027),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 4),
                             const Text(
                               'Liverpool',
                               style: TextStyle(
                                 color: Colors.white,
-                                fontSize: 15,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const Padding(
-                              padding: EdgeInsets.symmetric(vertical: 2),
-                              child: Text(
-                                'vs',
-                                style: TextStyle(
-                                  color: Color(0xFF00E5FF),
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                            Text(
-                              match.opponent,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 15,
-                                fontWeight: FontWeight.bold,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w900,
                               ),
                             ),
                           ],
                         ),
-
-                        // Escudo Rival
+                        // VS badge
                         Container(
-                          width: 48,
-                          height: 48,
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 5),
                           decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: Colors.white,
-                            boxShadow: [
-                              BoxShadow(
-                                color: const Color(0xFF0066B2).withValues(alpha: 0.4),
-                                blurRadius: 10,
-                                spreadRadius: 1,
-                              ),
-                            ],
+                            color: Colors.black.withValues(alpha: 0.3),
+                            borderRadius: BorderRadius.circular(10),
                           ),
-                          child: ClipOval(
-                            child: Image.network(
-                              match.opponentLogo,
-                              fit: BoxFit.contain,
-                              errorBuilder: (_, _, _) => const Icon(Icons.sports_soccer, color: Colors.blue),
+                          child: const Text(
+                            'VS',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 1,
                             ),
                           ),
                         ),
+                        // Rival
+                        Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              width: 56,
+                              height: 56,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: Colors.white,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.3),
+                                    blurRadius: 8,
+                                  ),
+                                ],
+                              ),
+                              child: ClipOval(
+                                child: Padding(
+                                  padding: const EdgeInsets.all(4),
+                                  child: Image.network(
+                                    match.opponentLogo,
+                                    fit: BoxFit.contain,
+                                    errorBuilder: (_, _, _) => const Icon(
+                                      Icons.sports_soccer,
+                                      color: Colors.blue,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              match.opponent,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                          ],
+                        ),
                       ],
                     ),
-                    const SizedBox(height: 10),
-                    // Etiqueta indicando que puede tocar para confirmar asistencia
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF00E5FF).withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: const Color(0xFF00E5FF).withValues(alpha: 0.3)),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.touch_app, color: Color(0xFF00E5FF), size: 13),
-                          const SizedBox(width: 4),
-                          Text(
-                            'Toca para confirmar asistencia ($confirmedCount confirmados)',
-                            style: const TextStyle(
-                              color: Color(0xFF00E5FF),
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
+                    const SizedBox(height: 6),
+                    Text(
+                      'Toca para confirmar asistencia ($confirmedCount confirmados)',
+                      style: const TextStyle(
+                        color: Colors.white60,
+                        fontSize: 10,
                       ),
                     ),
                   ],
@@ -626,7 +681,9 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildPlayerCard(Player player, Color accentColor, int index) {
     final parts = player.name.trim().split(' ');
     final firstName = parts.first;
-    final lastName = parts.length > 1 ? parts.sublist(1).join(' ') : (player.jerseyName.isNotEmpty ? player.jerseyName : '');
+    final lastName = parts.length > 1
+        ? parts.sublist(1).join(' ')
+        : (player.jerseyName.isNotEmpty ? player.jerseyName : '');
     final isCaptain = _state.isCaptain(player.id!);
 
     return InkWell(
@@ -643,7 +700,9 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           boxShadow: [
             BoxShadow(
-              color: isCaptain ? const Color(0xFFF59E0B).withValues(alpha: 0.15) : Colors.black.withValues(alpha: 0.04),
+              color: isCaptain
+                  ? const Color(0xFFF59E0B).withValues(alpha: 0.15)
+                  : Colors.black.withValues(alpha: 0.04),
               blurRadius: 10,
               offset: const Offset(0, 3),
             ),
@@ -680,7 +739,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
               // Contenido
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 12,
+                ),
                 child: Row(
                   children: [
                     // Avatar con anillo de color temático y soporte para fotos de cámara/galería
@@ -689,7 +751,9 @@ class _HomeScreenState extends State<HomeScreen> {
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         border: Border.all(
-                          color: isCaptain ? const Color(0xFFF59E0B) : accentColor,
+                          color: isCaptain
+                              ? const Color(0xFFF59E0B)
+                              : accentColor,
                           width: 2.2,
                         ),
                       ),
@@ -698,7 +762,11 @@ class _HomeScreenState extends State<HomeScreen> {
                         backgroundColor: const Color(0xFFF1F5F9),
                         backgroundImage: player.avatarImage,
                         child: player.avatarImage == null
-                            ? const Icon(Icons.person, color: Color(0xFF94A3B8), size: 30)
+                            ? const Icon(
+                                Icons.person,
+                                color: Color(0xFF94A3B8),
+                                size: 30,
+                              )
                             : null,
                       ),
                     ),
@@ -724,10 +792,16 @@ class _HomeScreenState extends State<HomeScreen> {
                               if (isCaptain) ...[
                                 const SizedBox(width: 6),
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 6,
+                                    vertical: 1.5,
+                                  ),
                                   decoration: BoxDecoration(
                                     gradient: const LinearGradient(
-                                      colors: [Color(0xFFF59E0B), Color(0xFFD97706)],
+                                      colors: [
+                                        Color(0xFFF59E0B),
+                                        Color(0xFFD97706),
+                                      ],
                                     ),
                                     borderRadius: BorderRadius.circular(6),
                                   ),
@@ -763,7 +837,10 @@ class _HomeScreenState extends State<HomeScreen> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 2.5,
+                          ),
                           decoration: BoxDecoration(
                             color: const Color(0xFFE8F8F0),
                             borderRadius: BorderRadius.circular(6),
@@ -779,7 +856,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                         ),
                         const SizedBox(height: 6),
-                        _buildUnifiedJerseyBadge(player.jerseyNumber),
+                        _buildUnifiedJerseyBadge(player.jerseyNumber, styleIndex: index),
                       ],
                     ),
                     const SizedBox(width: 4),
@@ -793,44 +870,123 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // Estilo unificado para todos los dorsales
-  Widget _buildUnifiedJerseyBadge(int number) {
-    return Container(
-      width: 46,
-      height: 50,
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFFD31027), Color(0xFF8B0000)],
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-        ),
-        borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(8),
-          topRight: Radius.circular(8),
-          bottomLeft: Radius.circular(20),
-          bottomRight: Radius.circular(20),
-        ),
-        border: Border.all(color: const Color(0xFF00E5FF), width: 1.8),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFFD31027).withValues(alpha: 0.4),
-            blurRadius: 8,
-            offset: const Offset(0, 3),
+  // 3 estilos rotativos de dorsal según índice
+  Widget _buildUnifiedJerseyBadge(int number, {int styleIndex = 0}) {
+    switch (styleIndex % 3) {
+      // Estilo 0: Rojo rubí hexagonal con borde cyan
+      case 0:
+        return Container(
+          width: 46,
+          height: 50,
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [Color(0xFFD31027), Color(0xFF8B0000)],
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+            ),
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(8),
+              topRight: Radius.circular(8),
+              bottomLeft: Radius.circular(22),
+              bottomRight: Radius.circular(22),
+            ),
+            border: Border.all(color: const Color(0xFF00E5FF), width: 1.8),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFFD31027).withValues(alpha: 0.45),
+                blurRadius: 10,
+                offset: const Offset(0, 3),
+              ),
+            ],
           ),
-        ],
-      ),
-      child: Center(
-        child: Text(
-          '$number',
-          style: const TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.w900,
-            fontSize: 21,
-            letterSpacing: 0.5,
+          child: Center(
+            child: Text(
+              '$number',
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w900,
+                fontSize: 21,
+                letterSpacing: 0.5,
+              ),
+            ),
           ),
-        ),
-      ),
-    );
+        );
+
+      // Estilo 1: Escudo medieval azul marino con borde dorado
+      case 1:
+        return SizedBox(
+          width: 46,
+          height: 52,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              CustomPaint(
+                size: const Size(46, 52),
+                painter: _ShieldPainter(
+                  fillColor: const Color(0xFF0A2342),
+                  borderColor: const Color(0xFFD4AF37),
+                ),
+              ),
+              Text(
+                '$number',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w900,
+                  fontSize: 19,
+                  letterSpacing: 0.5,
+                ),
+              ),
+            ],
+          ),
+        );
+
+      // Estilo 2: Círculo púrpura con doble anillo
+      default:
+        return Container(
+          width: 50,
+          height: 50,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: const RadialGradient(
+              colors: [Color(0xFF7C3AED), Color(0xFF4C1D95)],
+              center: Alignment(-0.3, -0.3),
+              radius: 1.2,
+            ),
+            border: Border.all(color: const Color(0xFFDDD6FE), width: 2.5),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF7C3AED).withValues(alpha: 0.4),
+                blurRadius: 10,
+                offset: const Offset(0, 3),
+              ),
+            ],
+          ),
+          child: Center(
+            child: Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: 0.25),
+                  width: 1.5,
+                ),
+              ),
+              child: Center(
+                child: Text(
+                  '$number',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 19,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+    }
   }
 
   // ==================== MODALES Y DIÁLOGOS ====================
@@ -844,7 +1000,9 @@ class _HomeScreenState extends State<HomeScreen> {
       builder: (ctx) {
         return StatefulBuilder(
           builder: (context, setModalState) {
-            final activePlayers = _state.players.where((p) => p.status == 'ACTIVO').toList();
+            final activePlayers = _state.players
+                .where((p) => p.status == 'ACTIVO')
+                .toList();
             final confirmedCount = _state.rsvpMap.values.where((v) => v).length;
 
             return Container(
@@ -879,18 +1037,28 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                         Text(
                           'Partido: Liverpool vs ${_state.currentMatch.opponent} (${_state.currentMatch.matchDate})',
-                          style: const TextStyle(color: Color(0xFF64748B), fontSize: 13),
+                          style: const TextStyle(
+                            color: Color(0xFF64748B),
+                            fontSize: 13,
+                          ),
                         ),
                         const SizedBox(height: 10),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
                           decoration: BoxDecoration(
                             color: const Color(0xFFE8F8F0),
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: Row(
                             children: [
-                              const Icon(Icons.check_circle, color: Color(0xFF10B981), size: 18),
+                              const Icon(
+                                Icons.check_circle,
+                                color: Color(0xFF10B981),
+                                size: 18,
+                              ),
                               const SizedBox(width: 8),
                               Text(
                                 '$confirmedCount jugadores confirmaron que sí irán',
@@ -919,19 +1087,33 @@ class _HomeScreenState extends State<HomeScreen> {
                             children: [
                               Text(
                                 p.name,
-                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 15,
+                                ),
                               ),
                               if (_state.isCaptain(p.id!)) ...[
                                 const SizedBox(width: 6),
-                                const Text('👑 CAP', style: TextStyle(color: Color(0xFFF59E0B), fontWeight: FontWeight.bold, fontSize: 11)),
+                                const Text(
+                                  '👑 CAP',
+                                  style: TextStyle(
+                                    color: Color(0xFFF59E0B),
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 11,
+                                  ),
+                                ),
                               ],
                             ],
                           ),
-                          subtitle: Text('Dorsal #${p.jerseyNumber} • ${p.jerseyName} • Tel: ${p.phoneNumber}'),
+                          subtitle: Text(
+                            'Dorsal #${p.jerseyNumber} • ${p.jerseyName} • Tel: ${p.phoneNumber}',
+                          ),
                           secondary: CircleAvatar(
                             backgroundColor: const Color(0xFFF1F5F9),
                             backgroundImage: p.avatarImage,
-                            child: p.avatarImage == null ? const Icon(Icons.person, color: Colors.grey) : null,
+                            child: p.avatarImage == null
+                                ? const Icon(Icons.person, color: Colors.grey)
+                                : null,
                           ),
                           activeThumbColor: const Color(0xFF10B981),
                           value: isGoing,
@@ -953,11 +1135,17 @@ class _HomeScreenState extends State<HomeScreen> {
                         onPressed: () => Navigator.pop(ctx),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFFD31027),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
                         ),
                         child: const Text(
                           'Guardar y Ver en Asistencia',
-                          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
                         ),
                       ),
                     ),
@@ -1013,7 +1201,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 const SizedBox(height: 18),
                 const Text(
                   'Agregar Nuevo Jugador',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: Color(0xFF0F172A)),
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w900,
+                    color: Color(0xFF0F172A),
+                  ),
                 ),
                 const SizedBox(height: 14),
 
@@ -1024,8 +1216,16 @@ class _HomeScreenState extends State<HomeScreen> {
                       CircleAvatar(
                         radius: 40,
                         backgroundColor: const Color(0xFFF1F5F9),
-                        backgroundImage: pickedBase64 != null ? MemoryImage(base64Decode(pickedBase64!)) : null,
-                        child: pickedBase64 == null ? const Icon(Icons.person, size: 45, color: Colors.grey) : null,
+                        backgroundImage: pickedBase64 != null
+                            ? MemoryImage(base64Decode(pickedBase64!))
+                            : null,
+                        child: pickedBase64 == null
+                            ? const Icon(
+                                Icons.person,
+                                size: 45,
+                                color: Colors.grey,
+                              )
+                            : null,
                       ),
                       Positioned(
                         bottom: 0,
@@ -1042,7 +1242,11 @@ class _HomeScreenState extends State<HomeScreen> {
                               color: Color(0xFFD31027),
                               shape: BoxShape.circle,
                             ),
-                            child: const Icon(Icons.camera_alt, color: Colors.white, size: 18),
+                            child: const Icon(
+                              Icons.camera_alt,
+                              color: Colors.white,
+                              size: 18,
+                            ),
                           ),
                         ),
                       ),
@@ -1065,7 +1269,9 @@ class _HomeScreenState extends State<HomeScreen> {
                     hintText: 'Ej. Roberto Firmino',
                     filled: true,
                     fillColor: const Color(0xFFF8FAFC),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -1076,7 +1282,9 @@ class _HomeScreenState extends State<HomeScreen> {
                     hintText: 'Ej. BOBBY',
                     filled: true,
                     fillColor: const Color(0xFFF8FAFC),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -1092,7 +1300,9 @@ class _HomeScreenState extends State<HomeScreen> {
                           hintText: 'Ej. 9',
                           filled: true,
                           fillColor: const Color(0xFFF8FAFC),
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
                         ),
                       ),
                     ),
@@ -1108,7 +1318,9 @@ class _HomeScreenState extends State<HomeScreen> {
                           prefixIcon: const Icon(Icons.phone, size: 18),
                           filled: true,
                           fillColor: const Color(0xFFF8FAFC),
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
                         ),
                       ),
                     ),
@@ -1129,9 +1341,13 @@ class _HomeScreenState extends State<HomeScreen> {
                         Navigator.pop(ctx);
                         final newPlayer = Player(
                           name: name,
-                          jerseyName: jName.isNotEmpty ? jName.toUpperCase() : name.split(' ').first.toUpperCase(),
+                          jerseyName: jName.isNotEmpty
+                              ? jName.toUpperCase()
+                              : name.split(' ').first.toUpperCase(),
                           jerseyNumber: num,
-                          phoneNumber: phone.isNotEmpty ? phone : '55 1234 5678',
+                          phoneNumber: phone.isNotEmpty
+                              ? phone
+                              : '55 1234 5678',
                           photoBase64: pickedBase64,
                         );
                         _state.addPlayer(newPlayer);
@@ -1139,9 +1355,17 @@ class _HomeScreenState extends State<HomeScreen> {
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFFD31027),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
                     ),
-                    child: const Text('Registrar Jugador', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                    child: const Text(
+                      'Registrar Jugador',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ),
                 ),
               ],
@@ -1153,7 +1377,10 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   // Selector para Cámara o Galería
-  void _pickPhotoSheet(BuildContext context, Function(String base64) onPhotoSelected) {
+  void _pickPhotoSheet(
+    BuildContext context,
+    Function(String base64) onPhotoSelected,
+  ) {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -1176,7 +1403,10 @@ class _HomeScreenState extends State<HomeScreen> {
               title: const Text('Tomar Foto con la Cámara'),
               onTap: () async {
                 Navigator.pop(ctx);
-                final xfile = await _picker.pickImage(source: ImageSource.camera, maxWidth: 600);
+                final xfile = await _picker.pickImage(
+                  source: ImageSource.camera,
+                  maxWidth: 600,
+                );
                 if (xfile != null) {
                   final bytes = await xfile.readAsBytes();
                   onPhotoSelected(base64Encode(bytes));
@@ -1184,11 +1414,17 @@ class _HomeScreenState extends State<HomeScreen> {
               },
             ),
             ListTile(
-              leading: const Icon(Icons.photo_library, color: Color(0xFF00C9A7)),
+              leading: const Icon(
+                Icons.photo_library,
+                color: Color(0xFF00C9A7),
+              ),
               title: const Text('Elegir de la Galería del Teléfono'),
               onTap: () async {
                 Navigator.pop(ctx);
-                final xfile = await _picker.pickImage(source: ImageSource.gallery, maxWidth: 600);
+                final xfile = await _picker.pickImage(
+                  source: ImageSource.gallery,
+                  maxWidth: 600,
+                );
                 if (xfile != null) {
                   final bytes = await xfile.readAsBytes();
                   onPhotoSelected(base64Encode(bytes));
@@ -1229,7 +1465,10 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: Container(
                   width: 40,
                   height: 4,
-                  decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2)),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
                 ),
               ),
               const SizedBox(height: 16),
@@ -1240,7 +1479,9 @@ class _HomeScreenState extends State<HomeScreen> {
                     radius: 36,
                     backgroundColor: const Color(0xFFF1F5F9),
                     backgroundImage: player.avatarImage,
-                    child: player.avatarImage == null ? const Icon(Icons.person, size: 40, color: Colors.grey) : null,
+                    child: player.avatarImage == null
+                        ? const Icon(Icons.person, size: 40, color: Colors.grey)
+                        : null,
                   ),
                   const SizedBox(width: 16),
                   Expanded(
@@ -1251,20 +1492,32 @@ class _HomeScreenState extends State<HomeScreen> {
                           children: [
                             Text(
                               player.name,
-                              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900),
+                              style: const TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.w900,
+                              ),
                             ),
                             if (isCap) ...[
                               const SizedBox(width: 6),
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                  vertical: 2,
+                                ),
                                 decoration: BoxDecoration(
                                   color: const Color(0xFFFEF3C7),
                                   borderRadius: BorderRadius.circular(6),
-                                  border: Border.all(color: const Color(0xFFF59E0B)),
+                                  border: Border.all(
+                                    color: const Color(0xFFF59E0B),
+                                  ),
                                 ),
                                 child: const Text(
                                   '👑 CAPITÁN',
-                                  style: TextStyle(color: Color(0xFFB45309), fontWeight: FontWeight.bold, fontSize: 10),
+                                  style: TextStyle(
+                                    color: Color(0xFFB45309),
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 10,
+                                  ),
                                 ),
                               ),
                             ],
@@ -1272,28 +1525,46 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                         Text(
                           'Playera: ${player.jerseyName} • Dorsal #${player.jerseyNumber}',
-                          style: const TextStyle(color: Color(0xFF64748B), fontWeight: FontWeight.w600),
+                          style: const TextStyle(
+                            color: Color(0xFF64748B),
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                         const SizedBox(height: 4),
                         Row(
                           children: [
-                            const Icon(Icons.phone, size: 14, color: Color(0xFF10B981)),
+                            const Icon(
+                              Icons.phone,
+                              size: 14,
+                              color: Color(0xFF10B981),
+                            ),
                             const SizedBox(width: 4),
                             Text(
                               player.phoneNumber,
-                              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF10B981)),
+                              style: const TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF10B981),
+                              ),
                             ),
                             const SizedBox(width: 10),
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 1.5),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 7,
+                                vertical: 1.5,
+                              ),
                               decoration: BoxDecoration(
-                                color: isBaja ? const Color(0xFFFEE2E2) : const Color(0xFFE8F8F0),
+                                color: isBaja
+                                    ? const Color(0xFFFEE2E2)
+                                    : const Color(0xFFE8F8F0),
                                 borderRadius: BorderRadius.circular(6),
                               ),
                               child: Text(
                                 player.status.toUpperCase(),
                                 style: TextStyle(
-                                  color: isBaja ? const Color(0xFFDC2626) : const Color(0xFF10B981),
+                                  color: isBaja
+                                      ? const Color(0xFFDC2626)
+                                      : const Color(0xFF10B981),
                                   fontWeight: FontWeight.bold,
                                   fontSize: 10,
                                 ),
@@ -1311,27 +1582,62 @@ class _HomeScreenState extends State<HomeScreen> {
               // Último Partido
               const Text(
                 'Último Partido Jugado',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Color(0xFF0F172A)),
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 15,
+                  color: Color(0xFF0F172A),
+                ),
               ),
               const SizedBox(height: 4),
               Row(
                 children: [
-                  const Icon(Icons.sports_soccer, color: Color(0xFFD31027), size: 18),
+                  const Icon(
+                    Icons.sports_soccer,
+                    color: Color(0xFFD31027),
+                    size: 18,
+                  ),
                   const SizedBox(width: 6),
-                  Text(player.lastMatchInfo ?? '23/10/2026 vs Bayern Munich (Asistió)'),
+                  Text(
+                    player.lastMatchInfo ??
+                        '23/10/2026 vs Bayern Munich (Asistió)',
+                  ),
                 ],
               ),
               const SizedBox(height: 16),
               // Estatus de Pagos
               const Text(
                 'Estatus Financiero y Cuotas',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Color(0xFF0F172A)),
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 15,
+                  color: Color(0xFF0F172A),
+                ),
               ),
               const SizedBox(height: 10),
-              _buildPaymentProgressItem('Arbitraje', arbPaid, _state.feeArbitraje, _state.getPaymentColor(player.id!, 'Arbitraje')),
-              _buildPaymentProgressItem('Inscripción', insPaid, _state.feeInscripcion, _state.getPaymentColor(player.id!, 'Inscripción')),
-              _buildPaymentProgressItem('Horario', horPaid, _state.feeHorario, _state.getPaymentColor(player.id!, 'Horario')),
-              _buildPaymentProgressItem('Uniforme', uniPaid, _state.feeUniforme, _state.getPaymentColor(player.id!, 'Uniforme')),
+              _buildPaymentProgressItem(
+                'Arbitraje',
+                arbPaid,
+                _state.feeArbitraje,
+                _state.getPaymentColor(player.id!, 'Arbitraje'),
+              ),
+              _buildPaymentProgressItem(
+                'Inscripción',
+                insPaid,
+                _state.feeInscripcion,
+                _state.getPaymentColor(player.id!, 'Inscripción'),
+              ),
+              _buildPaymentProgressItem(
+                'Horario',
+                horPaid,
+                _state.feeHorario,
+                _state.getPaymentColor(player.id!, 'Horario'),
+              ),
+              _buildPaymentProgressItem(
+                'Uniforme',
+                uniPaid,
+                _state.feeUniforme,
+                _state.getPaymentColor(player.id!, 'Uniforme'),
+              ),
               const Spacer(),
               // Botones de acción
               Row(
@@ -1349,9 +1655,18 @@ class _HomeScreenState extends State<HomeScreen> {
                   const SizedBox(width: 10),
                   Expanded(
                     child: ElevatedButton.icon(
-                      icon: const Icon(Icons.attach_money, size: 18, color: Colors.white),
-                      label: const Text('Abonar Pago', style: TextStyle(color: Colors.white)),
-                      style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF10B981)),
+                      icon: const Icon(
+                        Icons.attach_money,
+                        size: 18,
+                        color: Colors.white,
+                      ),
+                      label: const Text(
+                        'Abonar Pago',
+                        style: TextStyle(color: Colors.white),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF10B981),
+                      ),
                       onPressed: () {
                         Navigator.pop(ctx);
                         _showRecordPaymentDialog(context, player);
@@ -1367,7 +1682,12 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildPaymentProgressItem(String title, double paid, double target, Color statusColor) {
+  Widget _buildPaymentProgressItem(
+    String title,
+    double paid,
+    double target,
+    Color statusColor,
+  ) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 5),
       child: Column(
@@ -1376,10 +1696,19 @@ class _HomeScreenState extends State<HomeScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(title, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13.5)),
+              Text(
+                title,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 13.5,
+                ),
+              ),
               Text(
                 '\$${paid.toStringAsFixed(0)} / \$${target.toStringAsFixed(0)}',
-                style: TextStyle(color: statusColor, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  color: statusColor,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ],
           ),
@@ -1398,13 +1727,37 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // 4. Diálogo para Registrar / Cambiar Próximo Partido con Cancha Predeterminada
+  // 4. Diálogo para Registrar / Cambiar Próximo Partido con Búsqueda en Vivo de Escudos
   void _showNewMatchDialog(BuildContext context) {
-    final opponentCtrl = TextEditingController(text: _state.currentMatch.opponent);
-    final dateCtrl = TextEditingController(text: _state.currentMatch.matchDate);
-    final locationCtrl = TextEditingController(text: _state.currentMatch.matchLocation);
+    final opponentCtrl = TextEditingController(
+      text: _state.currentMatch.opponent,
+    );
+    final locationCtrl = TextEditingController(
+      text: _state.currentMatch.matchLocation,
+    );
     String selectedLogo = _state.currentMatch.opponentLogo;
-    String filterQuery = '';
+
+    // Intentamos parsear la fecha actual guardada
+    DateTime selectedDate = DateTime.now().add(const Duration(days: 7));
+    TimeOfDay selectedTime = const TimeOfDay(hour: 20, minute: 0);
+
+    List<TeamSuggestion> searchResults = [];
+    bool isLoading = false;
+
+    // Helper para formatear la fecha seleccionada al estilo "Viernes 30/10/2026 • 8:00 PM"
+    String formatMatchDateTime(DateTime date, TimeOfDay time) {
+      const dias = [
+        'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'
+      ];
+      final diaNombre = dias[date.weekday - 1];
+      final d = date.day.toString().padLeft(2, '0');
+      final m = date.month.toString().padLeft(2, '0');
+      final y = date.year;
+      final hour = time.hourOfPeriod == 0 ? 12 : time.hourOfPeriod;
+      final min = time.minute.toString().padLeft(2, '0');
+      final period = time.period == DayPeriod.am ? 'AM' : 'PM';
+      return '$diaNombre $d/$m/$y • $hour:$min $period';
+    }
 
     showModalBottomSheet(
       context: context,
@@ -1413,11 +1766,6 @@ class _HomeScreenState extends State<HomeScreen> {
       builder: (ctx) {
         return StatefulBuilder(
           builder: (context, setMatchState) {
-            final filteredClubs = popularClubs.where((club) {
-              return club.name.toLowerCase().contains(filterQuery.toLowerCase()) ||
-                  club.country.toLowerCase().contains(filterQuery.toLowerCase());
-            }).toList();
-
             return Container(
               height: MediaQuery.of(context).size.height * 0.90,
               decoration: const BoxDecoration(
@@ -1438,98 +1786,172 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: Container(
                         width: 40,
                         height: 4,
-                        decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2)),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade300,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
                       ),
                     ),
                     const SizedBox(height: 16),
                     const Text(
                       'Registrar Próximo Partido',
-                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900),
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w900,
+                      ),
                     ),
                     const SizedBox(height: 4),
                     const Text(
-                      'Buscar rival de ligas internacionales:',
+                      'Busca el nombre del equipo rival para obtener su escudo oficial:',
                       style: TextStyle(color: Colors.grey, fontSize: 13),
                     ),
                     const SizedBox(height: 10),
 
-                    // Barra de búsqueda en tiempo real
+                    // Barra de búsqueda en tiempo real conectada al servicio web
                     TextField(
-                      onChanged: (val) {
+                      onChanged: (val) async {
+                        if (val.length < 3) {
+                          setMatchState(() {
+                            searchResults = [];
+                            isLoading = false;
+                          });
+                          return;
+                        }
+
                         setMatchState(() {
-                          filterQuery = val;
+                          isLoading = true;
+                        });
+
+                        final results = await TeamSearchService.searchTeams(
+                          val,
+                        );
+
+                        setMatchState(() {
+                          searchResults = results;
+                          isLoading = false;
                         });
                       },
                       decoration: InputDecoration(
-                        hintText: 'Buscar rival (ej. Real Madrid, Barcelona, City, PSG...)',
-                        prefixIcon: const Icon(Icons.search, color: Color(0xFFD31027)),
+                        hintText:
+                            'Escribe el rival (ej. Real Madrid, Arsenal...)',
+                        prefixIcon: const Icon(
+                          Icons.search,
+                          color: Color(0xFFD31027),
+                        ),
+                        suffixIcon: isLoading
+                            ? const Padding(
+                                padding: EdgeInsets.all(12.0),
+                                child: SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                ),
+                              )
+                            : const Icon(
+                                Icons.sports_soccer,
+                                color: Colors.grey,
+                              ),
                         filled: true,
                         fillColor: const Color(0xFFF1F5F9),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
-                        contentPadding: const EdgeInsets.symmetric(vertical: 10),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          borderSide: BorderSide.none,
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          vertical: 10,
+                        ),
                       ),
                     ),
                     const SizedBox(height: 10),
 
-                    // Opciones de equipos recomendados en cuadrícula
-                    SizedBox(
-                      height: 90,
-                      child: filteredClubs.isEmpty
-                          ? const Center(child: Text('No se encontraron sugerencias. Escribe el nombre abajo.', style: TextStyle(color: Colors.grey, fontSize: 12)))
-                          : ListView.builder(
-                              scrollDirection: Axis.horizontal,
-                              itemCount: filteredClubs.length,
-                              itemBuilder: (context, i) {
-                                final club = filteredClubs[i];
-                                final isSelected = opponentCtrl.text.toLowerCase() == club.name.toLowerCase();
+                    // Cuadrícula de sugerencias encontradas en internet
+                    if (searchResults.isNotEmpty) ...[
+                      const Text(
+                        'Selecciona una sugerencia:',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF64748B),
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      SizedBox(
+                        height: 95,
+                        child: ListView.builder(
+                          scrollDirection: Axis.horizontal,
+                          itemCount: searchResults.length,
+                          itemBuilder: (context, i) {
+                            final club = searchResults[i];
+                            final isSelected =
+                                opponentCtrl.text.toLowerCase() ==
+                                club.name.toLowerCase();
 
-                                return GestureDetector(
-                                  onTap: () {
-                                    setMatchState(() {
-                                      opponentCtrl.text = club.name;
-                                      selectedLogo = club.logoUrl;
-                                    });
-                                  },
-                                  child: Container(
-                                    width: 85,
-                                    margin: const EdgeInsets.only(right: 10),
-                                    padding: const EdgeInsets.all(6),
-                                    decoration: BoxDecoration(
-                                      color: isSelected ? const Color(0xFFE8F8F0) : Colors.white,
-                                      borderRadius: BorderRadius.circular(12),
-                                      border: Border.all(
-                                        color: isSelected ? const Color(0xFF10B981) : Colors.grey.shade300,
-                                        width: isSelected ? 2 : 1,
+                            return GestureDetector(
+                              onTap: () {
+                                setMatchState(() {
+                                  opponentCtrl.text = club.name;
+                                  selectedLogo = club.badgeUrl;
+                                });
+                              },
+                              child: Container(
+                                width: 90,
+                                margin: const EdgeInsets.only(right: 10),
+                                padding: const EdgeInsets.all(6),
+                                decoration: BoxDecoration(
+                                  color: isSelected
+                                      ? const Color(0xFFE8F8F0)
+                                      : Colors.white,
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: isSelected
+                                        ? const Color(0xFF10B981)
+                                        : Colors.grey.shade300,
+                                    width: isSelected ? 2 : 1,
+                                  ),
+                                ),
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    club.badgeUrl.isNotEmpty
+                                        ? Image.network(
+                                            club.badgeUrl,
+                                            width: 36,
+                                            height: 36,
+                                            fit: BoxFit.contain,
+                                            errorBuilder: (_, _, _) =>
+                                                const Icon(
+                                                  Icons.shield,
+                                                  color: Colors.blue,
+                                                ),
+                                          )
+                                        : const Icon(
+                                            Icons.shield,
+                                            color: Colors.blue,
+                                            size: 36,
+                                          ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      club.name,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        fontWeight: isSelected
+                                            ? FontWeight.bold
+                                            : FontWeight.normal,
                                       ),
                                     ),
-                                    child: Column(
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      children: [
-                                        Image.network(
-                                          club.logoUrl,
-                                          width: 36,
-                                          height: 36,
-                                          fit: BoxFit.contain,
-                                          errorBuilder: (_, _, _) => const Icon(Icons.shield, color: Colors.blue),
-                                        ),
-                                        const SizedBox(height: 4),
-                                        Text(
-                                          club.name,
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                          style: TextStyle(
-                                            fontSize: 10,
-                                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                );
-                              },
-                            ),
-                    ),
-                    const SizedBox(height: 14),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                    ],
 
                     TextField(
                       controller: opponentCtrl,
@@ -1538,30 +1960,139 @@ class _HomeScreenState extends State<HomeScreen> {
                         prefixIcon: const Icon(Icons.shield),
                         filled: true,
                         fillColor: const Color(0xFFF8FAFC),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    TextField(
-                      controller: dateCtrl,
-                      decoration: InputDecoration(
-                        labelText: 'Fecha y Hora del Partido',
-                        hintText: 'Ej. Viernes 30/10/2026 8:00 PM',
-                        prefixIcon: const Icon(Icons.calendar_today),
-                        filled: true,
-                        fillColor: const Color(0xFFF8FAFC),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
                       ),
                     ),
                     const SizedBox(height: 10),
 
-                    // Selector de Canchas (con Deportivo Centenario como predeterminada)
-                    const Text('Sede / Cancha de Juego:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                    // ── Selector Visual de Fecha y Hora ──
+                    const Text(
+                      'Fecha y Hora del Partido:',
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        // Botón Fecha
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            icon: const Icon(Icons.calendar_today, size: 18),
+                            label: Text(
+                              '${selectedDate.day.toString().padLeft(2, '0')}/'
+                              '${selectedDate.month.toString().padLeft(2, '0')}/'
+                              '${selectedDate.year}',
+                              style: const TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: const Color(0xFFD31027),
+                              side: const BorderSide(color: Color(0xFFD31027)),
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            onPressed: () async {
+                              final picked = await showDatePicker(
+                                context: context,
+                                initialDate: selectedDate,
+                                firstDate: DateTime.now(),
+                                lastDate: DateTime.now().add(
+                                  const Duration(days: 365),
+                                ),
+                                locale: const Locale('es', 'MX'),
+                              );
+                              if (picked != null) {
+                                setMatchState(() => selectedDate = picked);
+                              }
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        // Botón Hora
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            icon: const Icon(Icons.access_time, size: 18),
+                            label: Text(
+                              () {
+                                final h = selectedTime.hourOfPeriod == 0
+                                    ? 12
+                                    : selectedTime.hourOfPeriod;
+                                final min = selectedTime.minute
+                                    .toString()
+                                    .padLeft(2, '0');
+                                final p = selectedTime.period == DayPeriod.am
+                                    ? 'AM'
+                                    : 'PM';
+                                return '$h:$min $p';
+                              }(),
+                              style: const TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: const Color(0xFF0077B6),
+                              side: const BorderSide(color: Color(0xFF0077B6)),
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            onPressed: () async {
+                              final picked = await showTimePicker(
+                                context: context,
+                                initialTime: selectedTime,
+                              );
+                              if (picked != null) {
+                                setMatchState(() => selectedTime = picked);
+                              }
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    // Vista previa del formato final
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF1F5F9),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text(
+                        formatMatchDateTime(selectedDate, selectedTime),
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF334155),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+
+
+                    // Selector de Canchas
+                    const Text(
+                      'Sede / Cancha de Juego:',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                      ),
+                    ),
                     const SizedBox(height: 6),
                     DropdownButtonFormField<String>(
-                      initialValue: _state.availableVenues.contains(locationCtrl.text) ? locationCtrl.text : TeamState.mainVenue,
+                      initialValue:
+                          _state.availableVenues.contains(locationCtrl.text)
+                          ? locationCtrl.text
+                          : TeamState.mainVenue,
                       items: _state.availableVenues.map((v) {
-                        return DropdownMenuItem(value: v, child: Text(v, style: const TextStyle(fontSize: 13)));
+                        return DropdownMenuItem(
+                          value: v,
+                          child: Text(v, style: const TextStyle(fontSize: 13)),
+                        );
                       }).toList(),
                       onChanged: (val) {
                         if (val != null) {
@@ -1571,10 +2102,15 @@ class _HomeScreenState extends State<HomeScreen> {
                         }
                       },
                       decoration: InputDecoration(
-                        prefixIcon: const Icon(Icons.location_on, color: Color(0xFFD31027)),
+                        prefixIcon: const Icon(
+                          Icons.location_on,
+                          color: Color(0xFFD31027),
+                        ),
                         filled: true,
                         fillColor: const Color(0xFFF8FAFC),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
                       ),
                     ),
                     const SizedBox(height: 20),
@@ -1587,18 +2123,32 @@ class _HomeScreenState extends State<HomeScreen> {
                           Navigator.pop(ctx);
                           _state.updateMatch(
                             MatchModel(
-                              opponent: opponentCtrl.text.trim().isNotEmpty ? opponentCtrl.text.trim() : 'Rival',
-                              opponentLogo: selectedLogo,
-                              matchDate: dateCtrl.text.trim(),
-                              matchLocation: locationCtrl.text.trim().isNotEmpty ? locationCtrl.text.trim() : TeamState.mainVenue,
+                              opponent: opponentCtrl.text.trim().isNotEmpty
+                                  ? opponentCtrl.text.trim()
+                                  : 'Rival',
+                              opponentLogo: selectedLogo.isNotEmpty
+                                  ? selectedLogo
+                                  : 'https://www.thesportsdb.com/images/media/team/badge/default.png',
+                              matchDate: formatMatchDateTime(selectedDate, selectedTime),
+                              matchLocation: locationCtrl.text.trim().isNotEmpty
+                                  ? locationCtrl.text.trim()
+                                  : TeamState.mainVenue,
                             ),
                           );
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFFD31027),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
                         ),
-                        child: const Text('Guardar y Publicar Partido', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                        child: const Text(
+                          'Guardar y Publicar Partido',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                       ),
                     ),
                   ],
@@ -1615,7 +2165,9 @@ class _HomeScreenState extends State<HomeScreen> {
   void _showEditPlayerDialog(BuildContext context, Player player) {
     final nameCtrl = TextEditingController(text: player.name);
     final jerseyNameCtrl = TextEditingController(text: player.jerseyName);
-    final numberCtrl = TextEditingController(text: player.jerseyNumber.toString());
+    final numberCtrl = TextEditingController(
+      text: player.jerseyNumber.toString(),
+    );
     final phoneCtrl = TextEditingController(text: player.phoneNumber);
     String? currentBase64 = player.photoBase64;
 
@@ -1653,8 +2205,13 @@ class _HomeScreenState extends State<HomeScreen> {
                       backgroundImage: currentBase64 != null
                           ? MemoryImage(base64Decode(currentBase64!))
                           : player.avatarImage,
-                      child: (currentBase64 == null && player.avatarImage == null)
-                          ? const Icon(Icons.person, size: 40, color: Colors.grey)
+                      child:
+                          (currentBase64 == null && player.avatarImage == null)
+                          ? const Icon(
+                              Icons.person,
+                              size: 40,
+                              color: Colors.grey,
+                            )
                           : null,
                     ),
                     Positioned(
@@ -1668,28 +2225,56 @@ class _HomeScreenState extends State<HomeScreen> {
                         }),
                         child: Container(
                           padding: const EdgeInsets.all(6),
-                          decoration: const BoxDecoration(color: Color(0xFFD31027), shape: BoxShape.circle),
-                          child: const Icon(Icons.camera_alt, color: Colors.white, size: 16),
+                          decoration: const BoxDecoration(
+                            color: Color(0xFFD31027),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.camera_alt,
+                            color: Colors.white,
+                            size: 16,
+                          ),
                         ),
                       ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 14),
-                TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: 'Nombre Completo')),
+                TextField(
+                  controller: nameCtrl,
+                  decoration: const InputDecoration(
+                    labelText: 'Nombre Completo',
+                  ),
+                ),
                 const SizedBox(height: 10),
-                TextField(controller: jerseyNameCtrl, decoration: const InputDecoration(labelText: 'Nombre de Playera')),
+                TextField(
+                  controller: jerseyNameCtrl,
+                  decoration: const InputDecoration(
+                    labelText: 'Nombre de Playera',
+                  ),
+                ),
                 const SizedBox(height: 10),
                 Row(
                   children: [
                     Expanded(
                       flex: 1,
-                      child: TextField(controller: numberCtrl, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Dorsal')),
+                      child: TextField(
+                        controller: numberCtrl,
+                        keyboardType: TextInputType.number,
+                        decoration: const InputDecoration(labelText: 'Dorsal'),
+                      ),
                     ),
                     const SizedBox(width: 10),
                     Expanded(
                       flex: 2,
-                      child: TextField(controller: phoneCtrl, keyboardType: TextInputType.phone, decoration: const InputDecoration(labelText: 'Teléfono', prefixIcon: Icon(Icons.phone, size: 18))),
+                      child: TextField(
+                        controller: phoneCtrl,
+                        keyboardType: TextInputType.phone,
+                        decoration: const InputDecoration(
+                          labelText: 'Teléfono',
+                          prefixIcon: Icon(Icons.phone, size: 18),
+                        ),
+                      ),
                     ),
                   ],
                 ),
@@ -1700,8 +2285,12 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: ElevatedButton(
                     onPressed: () {
                       player.name = nameCtrl.text.trim();
-                      player.jerseyName = jerseyNameCtrl.text.trim().toUpperCase();
-                      player.jerseyNumber = int.tryParse(numberCtrl.text.trim()) ?? player.jerseyNumber;
+                      player.jerseyName = jerseyNameCtrl.text
+                          .trim()
+                          .toUpperCase();
+                      player.jerseyNumber =
+                          int.tryParse(numberCtrl.text.trim()) ??
+                          player.jerseyNumber;
                       player.phoneNumber = phoneCtrl.text.trim();
                       if (currentBase64 != null) {
                         player.photoBase64 = currentBase64;
@@ -1709,8 +2298,16 @@ class _HomeScreenState extends State<HomeScreen> {
                       _state.updatePlayer(player);
                       Navigator.pop(ctx);
                     },
-                    style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFD31027)),
-                    child: const Text('Guardar Cambios', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFD31027),
+                    ),
+                    child: const Text(
+                      'Guardar Cambios',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ),
                 ),
               ],
@@ -1737,10 +2334,22 @@ class _HomeScreenState extends State<HomeScreen> {
               DropdownButtonFormField<String>(
                 initialValue: concept,
                 items: const [
-                  DropdownMenuItem(value: 'Arbitraje', child: Text('Arbitraje (\$50 por partido)')),
-                  DropdownMenuItem(value: 'Inscripción', child: Text('Inscripción (\$100)')),
-                  DropdownMenuItem(value: 'Horario', child: Text('Horario (\$100)')),
-                  DropdownMenuItem(value: 'Uniforme', child: Text('Uniforme (\$300)')),
+                  DropdownMenuItem(
+                    value: 'Arbitraje',
+                    child: Text('Arbitraje (\$50 por partido)'),
+                  ),
+                  DropdownMenuItem(
+                    value: 'Inscripción',
+                    child: Text('Inscripción (\$100)'),
+                  ),
+                  DropdownMenuItem(
+                    value: 'Horario',
+                    child: Text('Horario (\$100)'),
+                  ),
+                  DropdownMenuItem(
+                    value: 'Uniforme',
+                    child: Text('Uniforme (\$300)'),
+                  ),
                 ],
                 onChanged: (val) {
                   if (val != null) {
@@ -1750,20 +2359,30 @@ class _HomeScreenState extends State<HomeScreen> {
                     });
                   }
                 },
-                decoration: const InputDecoration(labelText: 'Rubro / Concepto'),
+                decoration: const InputDecoration(
+                  labelText: 'Rubro / Concepto',
+                ),
               ),
               const SizedBox(height: 12),
               TextField(
                 controller: amountCtrl,
                 keyboardType: TextInputType.number,
-                decoration: const InputDecoration(labelText: 'Monto a Abonar (\$)', prefixText: '\$ '),
+                decoration: const InputDecoration(
+                  labelText: 'Monto a Abonar (\$)',
+                  prefixText: '\$ ',
+                ),
               ),
             ],
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancelar')),
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancelar'),
+            ),
             ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF10B981)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF10B981),
+              ),
               onPressed: () {
                 final amt = double.tryParse(amountCtrl.text.trim()) ?? 0.0;
                 if (amt > 0) {
@@ -1771,7 +2390,10 @@ class _HomeScreenState extends State<HomeScreen> {
                   Navigator.pop(ctx);
                 }
               },
-              child: const Text('Confirmar Pago', style: TextStyle(color: Colors.white)),
+              child: const Text(
+                'Confirmar Pago',
+                style: TextStyle(color: Colors.white),
+              ),
             ),
           ],
         ),
@@ -1793,9 +2415,15 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final activePlayers = _state.players.where((p) => p.status == 'ACTIVO').toList();
-    final confirmedPlayers = activePlayers.where((p) => _state.rsvpMap[p.id] == true).toList();
-    final unconfirmedPlayers = activePlayers.where((p) => _state.rsvpMap[p.id] != true).toList();
+    final activePlayers = _state.players
+        .where((p) => p.status == 'ACTIVO')
+        .toList();
+    final confirmedPlayers = activePlayers
+        .where((p) => _state.rsvpMap[p.id] == true)
+        .toList();
+    final unconfirmedPlayers = activePlayers
+        .where((p) => _state.rsvpMap[p.id] != true)
+        .toList();
 
     return Scaffold(
       appBar: AppBar(
@@ -1809,14 +2437,18 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
           IconButton(
             icon: const Icon(Icons.person_add_alt_1, color: Colors.white),
             tooltip: 'Agregar jugador no confirmado',
-            onPressed: () => _showAddUnconfirmedDialog(context, unconfirmedPlayers),
+            onPressed: () =>
+                _showAddUnconfirmedDialog(context, unconfirmedPlayers),
           ),
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
         backgroundColor: const Color(0xFFD31027),
         icon: const Icon(Icons.add, color: Colors.white),
-        label: const Text('Asistió sin confirmar (+)', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        label: const Text(
+          'Asistió sin confirmar (+)',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
         onPressed: () => _showAddUnconfirmedDialog(context, unconfirmedPlayers),
       ),
       body: ListView(
@@ -1828,7 +2460,10 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
               color: Colors.white,
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
-                BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 10),
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.04),
+                  blurRadius: 10,
+                ),
               ],
             ),
             child: Column(
@@ -1836,7 +2471,10 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
               children: [
                 Text(
                   'Partido: Liverpool vs ${_state.currentMatch.opponent}',
-                  style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w900,
+                    fontSize: 16,
+                  ),
                 ),
                 Text(
                   'Fecha: ${_state.currentMatch.matchDate}',
@@ -1844,7 +2482,11 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                 ),
                 Text(
                   'Sede: ${_state.currentMatch.matchLocation}',
-                  style: const TextStyle(color: Color(0xFFD31027), fontSize: 12, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                    color: Color(0xFFD31027),
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ],
             ),
@@ -1852,7 +2494,11 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
           const SizedBox(height: 16),
           const Text(
             'Confirmaron que sí irían (RSVP)',
-            style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: Color(0xFF0F172A)),
+            style: TextStyle(
+              fontWeight: FontWeight.w900,
+              fontSize: 16,
+              color: Color(0xFF0F172A),
+            ),
           ),
           const SizedBox(height: 8),
           if (confirmedPlayers.isEmpty)
@@ -1873,18 +2519,27 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
 
             return Card(
               margin: const EdgeInsets.symmetric(vertical: 6),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
               child: ListTile(
                 leading: CircleAvatar(
                   backgroundColor: const Color(0xFFF1F5F9),
                   backgroundImage: player.avatarImage,
-                  child: player.avatarImage == null ? const Icon(Icons.person) : null,
+                  child: player.avatarImage == null
+                      ? const Icon(Icons.person)
+                      : null,
                 ),
-                title: Text(player.name, style: const TextStyle(fontWeight: FontWeight.bold)),
+                title: Text(
+                  player.name,
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
                 subtitle: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Dorsal #${player.jerseyNumber} • Tel: ${player.phoneNumber} • ${went ? "SÍ ASISTIÓ" : "NO HA LLEGADO"}'),
+                    Text(
+                      'Dorsal #${player.jerseyNumber} • Tel: ${player.phoneNumber} • ${went ? "SÍ ASISTIÓ" : "NO HA LLEGADO"}',
+                    ),
                     if (went) ...[
                       const SizedBox(height: 4),
                       if (isCap)
@@ -1895,17 +2550,37 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                             });
                           },
                           child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 3,
+                            ),
                             decoration: BoxDecoration(
                               color: const Color(0xFFFEF3C7),
                               borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: const Color(0xFFF59E0B), width: 1.5),
+                              border: Border.all(
+                                color: const Color(0xFFF59E0B),
+                                width: 1.5,
+                              ),
                             ),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: const [
-                                Text('👑 CAPITÁN ', style: TextStyle(color: Color(0xFFB45309), fontWeight: FontWeight.bold, fontSize: 11)),
-                                Text('(Quitar Cap)', style: TextStyle(color: Colors.red, fontSize: 10, fontWeight: FontWeight.bold)),
+                                Text(
+                                  '👑 CAPITÁN ',
+                                  style: TextStyle(
+                                    color: Color(0xFFB45309),
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 11,
+                                  ),
+                                ),
+                                Text(
+                                  '(Quitar Cap)',
+                                  style: TextStyle(
+                                    color: Colors.red,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
                               ],
                             ),
                           ),
@@ -1918,13 +2593,25 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                             });
                           },
                           child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 2.5,
+                            ),
                             decoration: BoxDecoration(
                               color: const Color(0xFFF1F5F9),
                               borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: const Color(0xFFCBD5E1)),
+                              border: Border.all(
+                                color: const Color(0xFFCBD5E1),
+                              ),
                             ),
-                            child: const Text('👑 Hacer Cap', style: TextStyle(color: Color(0xFF475569), fontWeight: FontWeight.bold, fontSize: 10.5)),
+                            child: const Text(
+                              '👑 Hacer Cap',
+                              style: TextStyle(
+                                color: Color(0xFF475569),
+                                fontWeight: FontWeight.bold,
+                                fontSize: 10.5,
+                              ),
+                            ),
                           ),
                         ),
                     ],
@@ -1945,79 +2632,124 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
           const SizedBox(height: 20),
           const Text(
             'Jugadores agregados directamente en cancha (+)',
-            style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: Color(0xFF0F172A)),
+            style: TextStyle(
+              fontWeight: FontWeight.w900,
+              fontSize: 16,
+              color: Color(0xFF0F172A),
+            ),
           ),
           const SizedBox(height: 8),
-          ...activePlayers.where((p) => _state.rsvpMap[p.id] != true && _state.attendedMap[p.id] == true).map((player) {
-            final isCap = _state.isCaptain(player.id!);
-            final hasAnyCaptain = _state.captainPlayerId != null;
+          ...activePlayers
+              .where(
+                (p) =>
+                    _state.rsvpMap[p.id] != true &&
+                    _state.attendedMap[p.id] == true,
+              )
+              .map((player) {
+                final isCap = _state.isCaptain(player.id!);
+                final hasAnyCaptain = _state.captainPlayerId != null;
 
-            return Card(
-              margin: const EdgeInsets.symmetric(vertical: 6),
-              color: const Color(0xFFF0FDF4),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              child: ListTile(
-                leading: const Icon(Icons.check_circle, color: Color(0xFF10B981)),
-                title: Text(player.name, style: const TextStyle(fontWeight: FontWeight.bold)),
-                subtitle: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Presente en cancha (No confirmó) • Tel: ${player.phoneNumber}'),
-                    const SizedBox(height: 4),
-                    if (isCap)
-                      GestureDetector(
-                        onTap: () {
-                          setState(() {
-                            _state.toggleCaptain(player.id!);
-                          });
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFFEF3C7),
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: const Color(0xFFF59E0B)),
-                          ),
-                          child: const Text('👑 CAPITÁN (Quitar Cap)', style: TextStyle(color: Color(0xFFB45309), fontWeight: FontWeight.bold, fontSize: 10)),
+                return Card(
+                  margin: const EdgeInsets.symmetric(vertical: 6),
+                  color: const Color(0xFFF0FDF4),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: ListTile(
+                    leading: const Icon(
+                      Icons.check_circle,
+                      color: Color(0xFF10B981),
+                    ),
+                    title: Text(
+                      player.name,
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Presente en cancha (No confirmó) • Tel: ${player.phoneNumber}',
                         ),
-                      )
-                    else if (!hasAnyCaptain)
-                      GestureDetector(
-                        onTap: () {
-                          setState(() {
-                            _state.toggleCaptain(player.id!);
-                          });
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: Colors.grey.shade400),
+                        const SizedBox(height: 4),
+                        if (isCap)
+                          GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                _state.toggleCaptain(player.id!);
+                              });
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 3,
+                              ),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFEF3C7),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: const Color(0xFFF59E0B),
+                                ),
+                              ),
+                              child: const Text(
+                                '👑 CAPITÁN (Quitar Cap)',
+                                style: TextStyle(
+                                  color: Color(0xFFB45309),
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 10,
+                                ),
+                              ),
+                            ),
+                          )
+                        else if (!hasAnyCaptain)
+                          GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                _state.toggleCaptain(player.id!);
+                              });
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: Colors.grey.shade400),
+                              ),
+                              child: const Text(
+                                '👑 Hacer Cap',
+                                style: TextStyle(
+                                  color: Colors.black87,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 10,
+                                ),
+                              ),
+                            ),
                           ),
-                          child: const Text('👑 Hacer Cap', style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold, fontSize: 10)),
-                        ),
-                      ),
-                  ],
-                ),
-                trailing: IconButton(
-                  icon: const Icon(Icons.close, color: Colors.red),
-                  onPressed: () {
-                    setState(() {
-                      _state.setActuallyWent(player.id!, false);
-                    });
-                  },
-                ),
-              ),
-            );
-          }),
+                      ],
+                    ),
+                    trailing: IconButton(
+                      icon: const Icon(Icons.close, color: Colors.red),
+                      onPressed: () {
+                        setState(() {
+                          _state.setActuallyWent(player.id!, false);
+                        });
+                      },
+                    ),
+                  ),
+                );
+              }),
           const SizedBox(height: 80),
         ],
       ),
     );
   }
 
-  void _showAddUnconfirmedDialog(BuildContext context, List<Player> unconfirmed) {
+  void _showAddUnconfirmedDialog(
+    BuildContext context,
+    List<Player> unconfirmed,
+  ) {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -2041,9 +2773,17 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                 itemBuilder: (context, i) {
                   final p = unconfirmed[i];
                   return ListTile(
-                    leading: const Icon(Icons.person_add, color: Color(0xFFD31027)),
-                    title: Text(p.name, style: const TextStyle(fontWeight: FontWeight.bold)),
-                    subtitle: Text('Dorsal #${p.jerseyNumber} • Tel: ${p.phoneNumber}'),
+                    leading: const Icon(
+                      Icons.person_add,
+                      color: Color(0xFFD31027),
+                    ),
+                    title: Text(
+                      p.name,
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    subtitle: Text(
+                      'Dorsal #${p.jerseyNumber} • Tel: ${p.phoneNumber}',
+                    ),
                     onTap: () {
                       _state.addUnconfirmedAttendance(p.id!);
                       Navigator.pop(ctx);
@@ -2073,7 +2813,9 @@ class _PaymentsScreenState extends State<PaymentsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final activePlayers = _state.players.where((p) => p.status == 'ACTIVO').toList();
+    final activePlayers = _state.players
+        .where((p) => p.status == 'ACTIVO')
+        .toList();
 
     return Scaffold(
       appBar: AppBar(
@@ -2093,7 +2835,9 @@ class _PaymentsScreenState extends State<PaymentsScreen> {
             decoration: BoxDecoration(
               color: const Color(0xFFE8F8F0),
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.3)),
+              border: Border.all(
+                color: const Color(0xFF10B981).withValues(alpha: 0.3),
+              ),
             ),
             child: Row(
               children: const [
@@ -2102,7 +2846,11 @@ class _PaymentsScreenState extends State<PaymentsScreen> {
                 Expanded(
                   child: Text(
                     'Inscripción, Horario y Uniforme se encuentran 100% CUBIERTOS para todo el equipo.',
-                    style: TextStyle(color: Color(0xFF065F46), fontSize: 12, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      color: Color(0xFF065F46),
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               ],
@@ -2116,7 +2864,10 @@ class _PaymentsScreenState extends State<PaymentsScreen> {
               color: Colors.white,
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
-                BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 10),
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.04),
+                  blurRadius: 10,
+                ),
               ],
             ),
             child: Row(
@@ -2140,12 +2891,18 @@ class _PaymentsScreenState extends State<PaymentsScreen> {
               onTap: () => _showPaymentOptions(context, player),
               child: Container(
                 margin: const EdgeInsets.symmetric(vertical: 6),
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 12,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
-                    BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8),
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.04),
+                      blurRadius: 8,
+                    ),
                   ],
                 ),
                 child: Row(
@@ -2153,17 +2910,28 @@ class _PaymentsScreenState extends State<PaymentsScreen> {
                     CircleAvatar(
                       backgroundColor: const Color(0xFFF1F5F9),
                       backgroundImage: player.avatarImage,
-                      child: player.avatarImage == null ? const Icon(Icons.person, color: Colors.grey) : null,
+                      child: player.avatarImage == null
+                          ? const Icon(Icons.person, color: Colors.grey)
+                          : null,
                     ),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(player.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                          Text(
+                            player.name,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 15,
+                            ),
+                          ),
                           Text(
                             'Playera: ${player.jerseyName} (#${player.jerseyNumber}) • Tel: ${player.phoneNumber}',
-                            style: const TextStyle(color: Colors.grey, fontSize: 11.5),
+                            style: const TextStyle(
+                              color: Colors.grey,
+                              fontSize: 11.5,
+                            ),
                           ),
                         ],
                       ),
@@ -2172,13 +2940,29 @@ class _PaymentsScreenState extends State<PaymentsScreen> {
                     Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        _buildCategoryBadge(Icons.sports_soccer, 'Arbitraje', arbColor),
+                        _buildCategoryBadge(
+                          Icons.sports_soccer,
+                          'Arbitraje',
+                          arbColor,
+                        ),
                         const SizedBox(width: 6),
-                        _buildCategoryBadge(Icons.emoji_events, 'Inscripción', insColor),
+                        _buildCategoryBadge(
+                          Icons.emoji_events,
+                          'Inscripción',
+                          insColor,
+                        ),
                         const SizedBox(width: 6),
-                        _buildCategoryBadge(Icons.access_time, 'Horario', horColor),
+                        _buildCategoryBadge(
+                          Icons.access_time,
+                          'Horario',
+                          horColor,
+                        ),
                         const SizedBox(width: 6),
-                        _buildCategoryBadge(Icons.checkroom, 'Uniforme', uniColor),
+                        _buildCategoryBadge(
+                          Icons.checkroom,
+                          'Uniforme',
+                          uniColor,
+                        ),
                       ],
                     ),
                   ],
@@ -2206,9 +2990,16 @@ class _PaymentsScreenState extends State<PaymentsScreen> {
   Widget _buildLegendItem(Color color, String text) {
     return Row(
       children: [
-        Container(width: 10, height: 10, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+        Container(
+          width: 10,
+          height: 10,
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+        ),
         const SizedBox(width: 6),
-        Text(text, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+        Text(
+          text,
+          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+        ),
       ],
     );
   }
@@ -2227,12 +3018,20 @@ class _PaymentsScreenState extends State<PaymentsScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Pagos de ${player.name}', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900)),
+            Text(
+              'Pagos de ${player.name}',
+              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900),
+            ),
             const SizedBox(height: 12),
             ListTile(
-              leading: const Icon(Icons.sports_soccer, color: Color(0xFFD31027)),
+              leading: const Icon(
+                Icons.sports_soccer,
+                color: Color(0xFFD31027),
+              ),
               title: const Text('Arbitraje (\$50 por partido)'),
-              subtitle: Text('Abonado: \$${_state.paidArbitraje[player.id] ?? 0.0}'),
+              subtitle: Text(
+                'Abonado: \$${_state.paidArbitraje[player.id] ?? 0.0}',
+              ),
               trailing: ElevatedButton(
                 onPressed: () {
                   _state.recordPayment(player.id!, 'Arbitraje', 50.0);
@@ -2245,17 +3044,23 @@ class _PaymentsScreenState extends State<PaymentsScreen> {
             ListTile(
               leading: const Icon(Icons.emoji_events, color: Color(0xFF10B981)),
               title: const Text('Inscripción al Torneo (\$100)'),
-              subtitle: Text('Abonado: \$${_state.paidInscripcion[player.id] ?? 0.0} (100% Cubierto)'),
+              subtitle: Text(
+                'Abonado: \$${_state.paidInscripcion[player.id] ?? 0.0} (100% Cubierto)',
+              ),
             ),
             ListTile(
               leading: const Icon(Icons.access_time, color: Color(0xFF10B981)),
               title: const Text('Horario (\$100)'),
-              subtitle: Text('Abonado: \$${_state.paidHorario[player.id] ?? 0.0} (100% Cubierto)'),
+              subtitle: Text(
+                'Abonado: \$${_state.paidHorario[player.id] ?? 0.0} (100% Cubierto)',
+              ),
             ),
             ListTile(
               leading: const Icon(Icons.checkroom, color: Color(0xFF10B981)),
               title: const Text('Uniforme Oficial (\$300)'),
-              subtitle: Text('Abonado: \$${_state.paidUniforme[player.id] ?? 0.0} (100% Cubierto)'),
+              subtitle: Text(
+                'Abonado: \$${_state.paidUniforme[player.id] ?? 0.0} (100% Cubierto)',
+              ),
             ),
           ],
         ),
@@ -2286,7 +3091,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
     if (_selectedFilter == 'ACTIVOS') {
       displayedPlayers = allPlayers.where((p) => p.status == 'ACTIVO').toList();
     } else if (_selectedFilter == 'BAJAS') {
-      displayedPlayers = allPlayers.where((p) => p.status == 'INACTIVO').toList();
+      displayedPlayers = allPlayers
+          .where((p) => p.status == 'INACTIVO')
+          .toList();
     }
 
     return Scaffold(
@@ -2308,7 +3115,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
               color: Colors.white,
               borderRadius: BorderRadius.circular(20),
               boxShadow: [
-                BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 10),
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.04),
+                  blurRadius: 10,
+                ),
               ],
             ),
             child: Column(
@@ -2317,9 +3127,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   child: Container(
                     width: 76,
                     height: 76,
-                    decoration: const BoxDecoration(shape: BoxShape.circle, color: Colors.white),
+                    decoration: const BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.white,
+                    ),
                     padding: const EdgeInsets.all(6),
-                    child: Image.asset('assets/images/liverpool_logo.png', fit: BoxFit.contain),
+                    child: Image.asset(
+                      'assets/images/liverpool_logo.png',
+                      fit: BoxFit.contain,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 10),
@@ -2334,7 +3150,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 const SizedBox(height: 14),
                 // CANCHA PRINCIPAL FIJA REQUERIDA
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
                   decoration: BoxDecoration(
                     color: const Color(0xFFFEF2F2),
                     borderRadius: BorderRadius.circular(12),
@@ -2342,7 +3161,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.location_on, color: Color(0xFFD31027), size: 20),
+                      const Icon(
+                        Icons.location_on,
+                        color: Color(0xFFD31027),
+                        size: 20,
+                      ),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Column(
@@ -2350,17 +3173,29 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           children: [
                             const Text(
                               'Sede Principal de Juego:',
-                              style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.bold, color: Color(0xFF991B1B)),
+                              style: TextStyle(
+                                fontSize: 10.5,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF991B1B),
+                              ),
                             ),
                             Text(
                               TeamState.mainVenue,
-                              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w900, color: Color(0xFF7F1D1D)),
+                              style: const TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w900,
+                                color: Color(0xFF7F1D1D),
+                              ),
                             ),
                           ],
                         ),
                       ),
                       IconButton(
-                        icon: const Icon(Icons.add_location_alt, color: Color(0xFFD31027), size: 20),
+                        icon: const Icon(
+                          Icons.add_location_alt,
+                          color: Color(0xFFD31027),
+                          size: 20,
+                        ),
                         tooltip: 'Agregar nueva cancha',
                         onPressed: () => _showAddVenueDialog(context),
                       ),
@@ -2403,7 +3238,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   backgroundColor: const Color(0xFFF1F5F9),
                   backgroundImage: player.avatarImage,
                   child: player.avatarImage == null
-                      ? Icon(Icons.person, color: isBaja ? Colors.red : Colors.grey)
+                      ? Icon(
+                          Icons.person,
+                          color: isBaja ? Colors.red : Colors.grey,
+                        )
                       : null,
                 ),
                 title: Row(
@@ -2414,20 +3252,29 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         fontWeight: FontWeight.bold,
                         fontSize: 15,
                         decoration: isBaja ? TextDecoration.lineThrough : null,
-                        color: isBaja ? Colors.grey.shade700 : const Color(0xFF0F172A),
+                        color: isBaja
+                            ? Colors.grey.shade700
+                            : const Color(0xFF0F172A),
                       ),
                     ),
                     const SizedBox(width: 6),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 1.5,
+                      ),
                       decoration: BoxDecoration(
-                        color: isBaja ? const Color(0xFFFEE2E2) : const Color(0xFFE8F8F0),
+                        color: isBaja
+                            ? const Color(0xFFFEE2E2)
+                            : const Color(0xFFE8F8F0),
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Text(
                         isBaja ? 'DADO DE BAJA' : 'ACTIVO',
                         style: TextStyle(
-                          color: isBaja ? const Color(0xFFDC2626) : const Color(0xFF10B981),
+                          color: isBaja
+                              ? const Color(0xFFDC2626)
+                              : const Color(0xFF10B981),
                           fontSize: 9,
                           fontWeight: FontWeight.bold,
                         ),
@@ -2438,15 +3285,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 subtitle: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Playera: ${player.jerseyName} • Dorsal #${player.jerseyNumber}'),
+                    Text(
+                      'Playera: ${player.jerseyName} • Dorsal #${player.jerseyNumber}',
+                    ),
                     const SizedBox(height: 2),
                     Row(
                       children: [
-                        const Icon(Icons.phone, size: 14, color: Color(0xFF10B981)),
+                        const Icon(
+                          Icons.phone,
+                          size: 14,
+                          color: Color(0xFF10B981),
+                        ),
                         const SizedBox(width: 4),
                         Text(
                           player.phoneNumber,
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF10B981)),
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                            color: Color(0xFF10B981),
+                          ),
                         ),
                       ],
                     ),
@@ -2467,7 +3324,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       value: 'toggle',
                       child: Row(
                         children: [
-                          Icon(isBaja ? Icons.check_circle : Icons.block, color: isBaja ? Colors.green : Colors.red, size: 18),
+                          Icon(
+                            isBaja ? Icons.check_circle : Icons.block,
+                            color: isBaja ? Colors.green : Colors.red,
+                            size: 18,
+                          ),
                           const SizedBox(width: 8),
                           Text(isBaja ? 'Reactivar Jugador' : 'Dar de Baja'),
                         ],
@@ -2509,7 +3370,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
             color: isSelected ? const Color(0xFFD31027) : Colors.white,
             borderRadius: BorderRadius.circular(12),
             boxShadow: [
-              if (!isSelected) BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 4),
+              if (!isSelected)
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.03),
+                  blurRadius: 4,
+                ),
             ],
           ),
           child: Center(
@@ -2543,7 +3408,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
               style: TextStyle(color: Colors.grey, fontSize: 12),
             ),
             const SizedBox(height: 6),
-            ..._state.availableVenues.map((v) => Text('• $v', style: const TextStyle(fontSize: 12))),
+            ..._state.availableVenues.map(
+              (v) => Text('• $v', style: const TextStyle(fontSize: 12)),
+            ),
             const SizedBox(height: 14),
             TextField(
               controller: venueCtrl,
@@ -2555,7 +3422,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancelar')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancelar'),
+          ),
           ElevatedButton(
             onPressed: () {
               final newVenue = venueCtrl.text.trim();
@@ -2583,17 +3453,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: 'Nombre')),
+            TextField(
+              controller: nameCtrl,
+              decoration: const InputDecoration(labelText: 'Nombre'),
+            ),
             const SizedBox(height: 10),
             TextField(
               controller: phoneCtrl,
               keyboardType: TextInputType.phone,
-              decoration: const InputDecoration(labelText: 'Número de Teléfono', prefixIcon: Icon(Icons.phone)),
+              decoration: const InputDecoration(
+                labelText: 'Número de Teléfono',
+                prefixIcon: Icon(Icons.phone),
+              ),
             ),
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancelar')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancelar'),
+          ),
           ElevatedButton(
             onPressed: () {
               player.name = nameCtrl.text.trim();
@@ -2608,4 +3487,70 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
     );
   }
+}
+
+// ============================================================
+// Pintor del escudo medieval (azul marino con borde dorado)
+// ============================================================
+class _ShieldPainter extends CustomPainter {
+  final Color fillColor;
+  final Color borderColor;
+
+  _ShieldPainter({required this.fillColor, required this.borderColor});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final w = size.width;
+    final h = size.height;
+
+    final path = Path()
+      ..moveTo(w * 0.5, h)
+      ..lineTo(0, h * 0.6)
+      ..lineTo(0, 0)
+      ..lineTo(w, 0)
+      ..lineTo(w, h * 0.6)
+      ..close();
+
+    // Relleno
+    canvas.drawPath(path, Paint()..color = fillColor);
+
+    // Borde dorado
+    canvas.drawPath(
+      path,
+      Paint()
+        ..color = borderColor
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2.2,
+    );
+  }
+
+  @override
+  bool shouldRepaint(_ShieldPainter old) =>
+      fillColor != old.fillColor || borderColor != old.borderColor;
+}
+
+// ============================================================
+// Pintor de rayas diagonales semi-transparentes (tarjeta de partido)
+// ============================================================
+class _DiagonalStripesPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = Colors.white.withValues(alpha: 0.07)
+      ..strokeWidth = 22
+      ..style = PaintingStyle.stroke;
+
+    // 6 rayas diagonales espaciadas
+    for (int i = -2; i < 8; i++) {
+      final x = i * 36.0;
+      canvas.drawLine(
+        Offset(x, 0),
+        Offset(x + size.height, size.height),
+        paint,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(_DiagonalStripesPainter old) => false;
 }
