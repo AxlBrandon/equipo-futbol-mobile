@@ -81,52 +81,62 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           color: Colors.white,
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.06),
-              blurRadius: 12,
-              offset: const Offset(0, -3),
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 10,
+              offset: const Offset(0, -2),
             ),
           ],
-        ),
-        child: BottomNavigationBar(
-          currentIndex: _currentIndex,
-          selectedItemColor: const Color(0xFFD31027),
-          unselectedItemColor: const Color(0xFF94A3B8),
-          backgroundColor: Colors.white,
-          elevation: 0,
-          type: BottomNavigationBarType.fixed,
-          selectedLabelStyle: const TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 12,
+          border: const Border(
+            top: BorderSide(color: Color(0xFFF1F5F9), width: 1),
           ),
-          unselectedLabelStyle: const TextStyle(fontSize: 12),
-          onTap: (index) {
-            setState(() {
-              _currentIndex = index;
-            });
-          },
-          items: const [
-            BottomNavigationBarItem(
-              icon: Icon(Icons.home_outlined),
-              activeIcon: Icon(Icons.home),
-              label: 'Inicio',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.groups_outlined),
-              activeIcon: Icon(Icons.groups),
-              label: 'Asistencia',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.payments_outlined),
-              activeIcon: Icon(Icons.payments),
-              label: 'Pagos',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.admin_panel_settings_outlined),
-              activeIcon: Icon(Icons.admin_panel_settings),
-              label: 'Perfil Club',
-            ),
-          ],
         ),
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+        child: SafeArea(
+          top: false,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _buildNavItem(0, Icons.home_outlined, Icons.home, 'Inicio'),
+              _buildNavItem(1, Icons.calendar_today_outlined, Icons.calendar_today, 'Partidos'),
+              _buildNavItem(2, Icons.people_outline, Icons.people, 'Plantilla'),
+              _buildNavItem(3, Icons.shield_outlined, Icons.shield, 'Mi club'),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNavItem(int index, IconData icon, IconData activeIcon, String label) {
+    final isSelected = _currentIndex == index;
+    return GestureDetector(
+      onTap: () => setState(() => _currentIndex = index),
+      behavior: HitTestBehavior.opaque,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            decoration: BoxDecoration(
+              color: isSelected ? const Color(0xFFFDE8E8) : Colors.transparent,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Icon(
+              isSelected ? activeIcon : icon,
+              color: isSelected ? const Color(0xFFC8102E) : const Color(0xFF94A3B8),
+              size: 22,
+            ),
+          ),
+          const SizedBox(height: 3),
+          Text(
+            label,
+            style: TextStyle(
+              color: isSelected ? const Color(0xFFC8102E) : const Color(0xFF94A3B8),
+              fontSize: 11,
+              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -146,439 +156,448 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final palette = [
-      const Color(0xFF00C9A7), // Turquesa
-      const Color(0xFFF59E0B), // Dorado / Ámbar
-      const Color(0xFFA855F7), // Púrpura
-      const Color(0xFF3B82F6), // Azul
-    ];
-
     // En Inicio mostramos los jugadores activos
     final activePlayers = _state.players
         .where((p) => p.status == 'ACTIVO')
         .toList();
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF6F8FB),
+      backgroundColor: const Color(0xFFF8F9FA),
       body: SingleChildScrollView(
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 1. ENCABEZADO CON LOGO OFICIAL LIVERPOOL Y AURA NEÓN
+            // 1. ENCABEZADO CON GEOMETRÍA FIGMA LIVERPOOL F.C.
             _buildTopHeader(),
 
-            // 2. CONTENIDO PRINCIPAL CURVADO
-            Transform.translate(
-              offset: const Offset(0, -18),
-              child: Container(
-                decoration: const BoxDecoration(
-                  color: Color(0xFFF6F8FB),
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(26)),
+            // 2. CONTENIDO PRINCIPAL
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 14),
+
+                  // TARJETA DE PRÓXIMO PARTIDO (FIGMA STYLE)
+                  _buildNextMatchCard(),
+
+                  const SizedBox(height: 20),
+
+                  // TÍTULO "MI PLANTILLA" + BOTÓN "+ Agregar jugadores"
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      const Text(
+                        'MI PLANTILLA',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w900,
+                          color: Color(0xFF0F172A),
+                          letterSpacing: 0.2,
+                        ),
+                      ),
+                      _buildAddPlayerButton(),
+                    ],
+                  ),
+
+                  const SizedBox(height: 14),
+
+                  // LISTA DE TARJETAS DE JUGADORES ACTIVOS
+                  ListView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    padding: EdgeInsets.zero,
+                    itemCount: activePlayers.length,
+                    itemBuilder: (context, index) {
+                      final player = activePlayers[index];
+                      return _buildPlayerCard(player, index);
+                    },
+                  ),
+
+                  const SizedBox(height: 14),
+                  const Center(
+                    child: Text(
+                      'Partido y plantilla de ejemplo',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Color(0xFF94A3B8),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 28),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Obtener iniciales para el avatar estilo Figma (ej: "AC", "JG", "BM")
+  String _getPlayerInitials(String name) {
+    final parts = name.trim().split(RegExp(r'\s+')).where((s) => s.isNotEmpty).toList();
+    if (parts.isEmpty) return 'LFC';
+    if (parts.length == 1) {
+      return parts[0].substring(0, parts[0].length >= 2 ? 2 : 1).toUpperCase();
+    }
+    return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
+  }
+
+  // Encabezado con geometría y escudo oficial de Liverpool estilo Figma
+  Widget _buildTopHeader() {
+    return Container(
+      width: double.infinity,
+      color: const Color(0xFFC8102E), // Rojo oficial de Liverpool
+      child: Stack(
+        children: [
+          // Geometría angular en el fondo derecho (cuña roja oscura y cuña teal)
+          Positioned.fill(
+            child: CustomPaint(
+              painter: _HeaderGeometricPainter(),
+            ),
+          ),
+
+          // Contenido principal
+          SafeArea(
+            bottom: false,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 18, 22),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  // Textos a la izquierda
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          'MI EQUIPO • MI PASIÓN',
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.9),
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 1.1,
+                          ),
+                        ),
+                        const SizedBox(height: 3),
+                        const Text(
+                          'LIVERPOOL F.C.',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 26,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: -0.5,
+                            height: 1.1,
+                          ),
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          'Nunca caminarás solo.',
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.85),
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w400,
+                            fontStyle: FontStyle.italic,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // Escudo oficial Liverpool a la derecha sobre el corte teal
+                  Container(
+                    width: 66,
+                    height: 66,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.15),
+                          blurRadius: 8,
+                          offset: const Offset(0, 3),
+                        ),
+                      ],
+                    ),
+                    child: Image.asset(
+                      'assets/images/liverpool_logo.png',
+                      fit: BoxFit.contain,
+                      errorBuilder: (_, _, _) => const Icon(
+                        Icons.shield,
+                        color: Colors.white,
+                        size: 44,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Tarjeta "PRÓXIMO PARTIDO" estilo Figma (verde/teal pizarra con corte angular)
+  Widget _buildNextMatchCard() {
+    final match = _state.currentMatch;
+
+    return InkWell(
+      borderRadius: BorderRadius.circular(16),
+      onTap: () => _showRsvpModal(context),
+      child: Container(
+        width: double.infinity,
+        decoration: BoxDecoration(
+          color: const Color(0xFF0E2E2E), // Fondo verde/teal pizarra profundo
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.08),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(16),
+          child: Stack(
+            children: [
+              // Corte diagonal geométrico oscuro en el fondo
+              Positioned.fill(
+                child: CustomPaint(
+                  painter: _MatchCardGeometricPainter(),
                 ),
-                padding: const EdgeInsets.symmetric(horizontal: 16),
+              ),
+
+              // Botón sutil para agendar / cambiar partido
+              Positioned(
+                top: 8,
+                right: 85,
+                child: GestureDetector(
+                  onTap: () => _showNewMatchDialog(context),
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.08),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.edit_calendar,
+                      color: Colors.white70,
+                      size: 14,
+                    ),
+                  ),
+                ),
+              ),
+
+              // Contenido de la tarjeta
+              Padding(
+                padding: const EdgeInsets.all(16.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const SizedBox(height: 12),
-
-                    // TARJETA DE PRÓXIMO PARTIDO (AL TOCAR ABRE CONFIRMACIÓN DE ASISTENCIA)
-                    _buildNextMatchCard(),
-
-                    const SizedBox(height: 12),
-
-                    // PUNTOS INDICADORES DEL CARRUSEL
-                    _buildCarouselIndicators(),
-
-                    const SizedBox(height: 22),
-
-                    // TÍTULO "Mi Plantilla" + BOTÓN "+ Agregar Jugadores"
+                    // Fila superior: "PRÓXIMO PARTIDO" y badge "POR JUGAR"
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Mi Plantilla',
-                              style: TextStyle(
-                                fontSize: 24,
-                                fontWeight: FontWeight.w900,
-                                color: Color(0xFF0F172A),
-                                letterSpacing: -0.5,
-                              ),
-                            ),
-                            Text(
-                              '${activePlayers.length} Jugadores Activos en Cancha',
-                              style: const TextStyle(
-                                fontSize: 12,
-                                color: Color(0xFF64748B),
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
+                        const Text(
+                          'PRÓXIMO PARTIDO',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 14.5,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 0.5,
+                          ),
                         ),
-                        _buildAddPlayerButton(),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 9,
+                            vertical: 3.5,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Text(
+                            'POR JUGAR',
+                            style: TextStyle(
+                              color: Color(0xFF5EEAD4), // Menta suave
+                              fontSize: 10,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 0.6,
+                            ),
+                          ),
+                        ),
                       ],
                     ),
 
                     const SizedBox(height: 16),
 
-                    // LISTA DE TARJETAS DE JUGADORES ACTIVOS
-                    ListView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: activePlayers.length,
-                      itemBuilder: (context, index) {
-                        final player = activePlayers[index];
-                        final accentColor = palette[index % palette.length];
-                        return _buildPlayerCard(player, accentColor, index);
-                      },
-                    ),
-
-                    const SizedBox(height: 20),
-                    const Center(
-                      child: Text(
-                        'by AXLORRA',
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: Color(0xFF94A3B8),
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: 1.5,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // Encabezado con Logo oficial de Liverpool
-  Widget _buildTopHeader() {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(22, 48, 20, 36),
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            Color(0xFFE50914), // Rojo Liverpool vibrante
-            Color(0xFFC8102E),
-            Color(0xFF8B0000), // Rojo profundo
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: const [
-              Text(
-                'Liverpool',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 34,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: -0.5,
-                  height: 1.05,
-                ),
-              ),
-              Text(
-                'F.C.',
-                style: TextStyle(
-                  color: Color(0xFF00E5FF),
-                  fontSize: 30,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 1.2,
-                  height: 1.1,
-                ),
-              ),
-            ],
-          ),
-
-          // Escudo oficial con aura neón
-          _buildOfficialLiverpoolLogo(),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildOfficialLiverpoolLogo() {
-    return Container(
-      width: 78,
-      height: 78,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF00E5FF).withValues(alpha: 0.5),
-            blurRadius: 18,
-            spreadRadius: 2,
-          ),
-          BoxShadow(
-            color: const Color(0xFFFF2A6D).withValues(alpha: 0.4),
-            blurRadius: 22,
-            spreadRadius: 1,
-          ),
-        ],
-      ),
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          // Halo de luz neón
-          Container(
-            width: 76,
-            height: 76,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: const Color(0xFF00E5FF).withValues(alpha: 0.8),
-                width: 1.5,
-              ),
-              gradient: SweepGradient(
-                colors: [
-                  const Color(0xFF00E5FF),
-                  const Color(0xFFFF2A6D).withValues(alpha: 0.7),
-                  Colors.transparent,
-                  const Color(0xFF00E5FF),
-                ],
-              ),
-            ),
-          ),
-          // Logo oficial cargado desde los assets
-          Padding(
-            padding: const EdgeInsets.all(6.0),
-            child: Image.asset(
-              'assets/images/liverpool_logo.png',
-              width: 58,
-              height: 58,
-              fit: BoxFit.contain,
-              errorBuilder: (_, _, _) =>
-                  const Icon(Icons.shield, color: Colors.white, size: 40),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // Tarjeta "Próximo Partido" interactiva — estilo de la plantilla
-  Widget _buildNextMatchCard() {
-    final match = _state.currentMatch;
-    final confirmedCount = _state.rsvpMap.values.where((v) => v).length;
-
-    return InkWell(
-      borderRadius: BorderRadius.circular(20),
-      onTap: () => _showRsvpModal(context),
-      child: Container(
-        width: double.infinity,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xFFD31027).withValues(alpha: 0.35),
-              blurRadius: 18,
-              offset: const Offset(0, 6),
-            ),
-          ],
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(20),
-          child: Stack(
-            children: [
-              // ── Fondo: gradiente rojo/naranja como la plantilla ──
-              Container(
-                height: 170,
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      Color(0xFFB91C1C),
-                      Color(0xFFEF4444),
-                      Color(0xFFFF6B35),
-                      Color(0xFFEF4444),
-                      Color(0xFFB91C1C),
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    stops: [0.0, 0.25, 0.5, 0.75, 1.0],
-                  ),
-                ),
-              ),
-              // ── Rayas diagonales blancas estilo plantilla ──
-              Positioned.fill(
-                child: CustomPaint(
-                  painter: _DiagonalStripesPainter(),
-                ),
-              ),
-              // ── Botón editar esquina superior derecha ──
-              Positioned(
-                top: 4,
-                right: 4,
-                child: IconButton(
-                  icon: const Icon(
-                    Icons.edit_calendar,
-                    color: Colors.white70,
-                    size: 18,
-                  ),
-                  tooltip: 'Cambiar o Agendar Partido',
-                  onPressed: () => _showNewMatchDialog(context),
-                ),
-              ),
-              // ── Contenido centrado ──
-              SizedBox(
-                height: 170,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    // Badge "Próximo Partido"
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 14, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withValues(alpha: 0.3),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: const Text(
-                        'Próximo Partido',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 3),
-                    // Fecha con hora
-                    Text(
-                      match.matchDate,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        color: Colors.white70,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    // Logos y nombres de equipos
+                    // Fila media: Liverpool vs Rival
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         // Liverpool
                         Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Container(
-                              width: 56,
-                              height: 56,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: Colors.white,
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withValues(alpha: 0.3),
-                                    blurRadius: 8,
-                                  ),
-                                ],
-                              ),
-                              padding: const EdgeInsets.all(4),
+                            SizedBox(
+                              width: 44,
+                              height: 44,
                               child: Image.asset(
                                 'assets/images/liverpool_logo.png',
                                 fit: BoxFit.contain,
                                 errorBuilder: (_, _, _) => const Icon(
                                   Icons.shield,
-                                  color: Color(0xFFD31027),
+                                  color: Color(0xFFC8102E),
+                                  size: 36,
                                 ),
                               ),
                             ),
-                            const SizedBox(height: 4),
+                            const SizedBox(height: 6),
                             const Text(
                               'Liverpool',
                               style: TextStyle(
                                 color: Colors.white,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w900,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
                               ),
                             ),
                           ],
                         ),
-                        // VS badge
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 10, vertical: 5),
-                          decoration: BoxDecoration(
-                            color: Colors.black.withValues(alpha: 0.3),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: const Text(
-                            'VS',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 15,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: 1,
+
+                        // VS con pequeña barra teal
+                        Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Text(
+                              'VS',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: 0.5,
+                              ),
                             ),
-                          ),
+                            const SizedBox(height: 3),
+                            Container(
+                              width: 18,
+                              height: 2.2,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF00A398),
+                                borderRadius: BorderRadius.circular(1),
+                              ),
+                            ),
+                          ],
                         ),
+
                         // Rival
                         Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Container(
-                              width: 56,
-                              height: 56,
-                              decoration: BoxDecoration(
+                              width: 44,
+                              height: 44,
+                              decoration: const BoxDecoration(
                                 shape: BoxShape.circle,
                                 color: Colors.white,
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withValues(alpha: 0.3),
-                                    blurRadius: 8,
-                                  ),
-                                ],
                               ),
+                              padding: const EdgeInsets.all(3),
                               child: ClipOval(
-                                child: Padding(
-                                  padding: const EdgeInsets.all(4),
-                                  child: Image.network(
-                                    match.opponentLogo,
-                                    fit: BoxFit.contain,
-                                    errorBuilder: (_, _, _) => const Icon(
-                                      Icons.sports_soccer,
-                                      color: Colors.blue,
-                                    ),
-                                  ),
-                                ),
+                                child: match.opponentLogo.isNotEmpty
+                                    ? Image.network(
+                                        match.opponentLogo,
+                                        fit: BoxFit.contain,
+                                        errorBuilder: (_, _, _) => Container(
+                                          color: const Color(0xFFC8102E),
+                                          child: Center(
+                                            child: Text(
+                                              match.opponent.isNotEmpty
+                                                  ? match.opponent.substring(0, 1).toUpperCase()
+                                                  : 'R',
+                                              style: const TextStyle(
+                                                color: Colors.white,
+                                                fontWeight: FontWeight.w900,
+                                                fontSize: 16,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      )
+                                    : Container(
+                                        color: const Color(0xFFC8102E),
+                                        child: const Center(
+                                          child: Text(
+                                            'FCB',
+                                            style: TextStyle(
+                                              color: Colors.white,
+                                              fontWeight: FontWeight.w900,
+                                              fontSize: 12,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
                               ),
                             ),
-                            const SizedBox(height: 4),
+                            const SizedBox(height: 6),
                             Text(
                               match.opponent,
                               style: const TextStyle(
                                 color: Colors.white,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w900,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
                               ),
                             ),
                           ],
                         ),
                       ],
                     ),
-                    const SizedBox(height: 6),
-                    Text(
-                      'Toca para confirmar asistencia ($confirmedCount confirmados)',
-                      style: const TextStyle(
-                        color: Colors.white60,
-                        fontSize: 10,
-                      ),
+
+                    const SizedBox(height: 16),
+
+                    // Línea divisoria sutil
+                    Container(
+                      width: double.infinity,
+                      height: 1,
+                      color: Colors.white.withValues(alpha: 0.10),
+                    ),
+
+                    const SizedBox(height: 10),
+
+                    // Fila inferior: Calendario Fecha y Flecha oblicua
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.calendar_today_outlined,
+                              size: 13.5,
+                              color: Colors.white.withValues(alpha: 0.75),
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              match.matchDate,
+                              style: TextStyle(
+                                color: Colors.white.withValues(alpha: 0.8),
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                        Icon(
+                          Icons.north_east,
+                          size: 15,
+                          color: Colors.white.withValues(alpha: 0.75),
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -590,84 +609,39 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildCarouselIndicators() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Container(
-          width: 14,
-          height: 5,
-          decoration: BoxDecoration(
-            color: const Color(0xFFD31027),
-            borderRadius: BorderRadius.circular(3),
-          ),
-        ),
-        const SizedBox(width: 5),
-        for (int i = 0; i < 4; i++) ...[
-          Container(
-            width: 5,
-            height: 5,
-            decoration: const BoxDecoration(
-              color: Color(0xFFCBD5E1),
-              shape: BoxShape.circle,
-            ),
-          ),
-          if (i < 3) const SizedBox(width: 5),
-        ],
-      ],
-    );
-  }
-
+  // Botón "+ Agregar jugadores" estilo píldora roja Figma
   Widget _buildAddPlayerButton() {
     return Container(
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFFFF5252), Color(0xFFFF7A00)],
-        ),
-        borderRadius: BorderRadius.circular(24),
+        color: const Color(0xFFC8102E), // Rojo oficial de Liverpool
+        borderRadius: BorderRadius.circular(22),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFFFF5252).withValues(alpha: 0.35),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            color: const Color(0xFFC8102E).withValues(alpha: 0.28),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
           ),
         ],
       ),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(22),
           onTap: () => _showAddPlayerDialog(context),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+          child: const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 14, vertical: 8),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.add, color: Colors.white, size: 20),
-                const SizedBox(width: 4),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: const [
-                    Text(
-                      'Agregar',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 11.5,
-                        fontWeight: FontWeight.w900,
-                        height: 1.0,
-                      ),
-                    ),
-                    Text(
-                      'Jugadores',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 11.5,
-                        fontWeight: FontWeight.w900,
-                        height: 1.0,
-                      ),
-                    ),
-                  ],
+                Icon(Icons.add, color: Colors.white, size: 16),
+                SizedBox(width: 4),
+                Text(
+                  'Agregar jugadores',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ],
             ),
@@ -677,316 +651,174 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // Tarjeta de Jugador con navegación al perfil e insignia de Capitán
-  Widget _buildPlayerCard(Player player, Color accentColor, int index) {
-    final parts = player.name.trim().split(' ');
+  // Tarjeta de Jugador estilo Figma (franja teal, iniciales mint, número rojo y estado verde)
+  Widget _buildPlayerCard(Player player, int index) {
+    final parts = player.name.trim().split(RegExp(r'\s+'));
     final firstName = parts.first;
     final lastName = parts.length > 1
         ? parts.sublist(1).join(' ')
         : (player.jerseyName.isNotEmpty ? player.jerseyName : '');
     final isCaptain = _state.isCaptain(player.id!);
+    final initials = _getPlayerInitials(player.name);
 
     return InkWell(
-      borderRadius: BorderRadius.circular(20),
+      borderRadius: BorderRadius.circular(14),
       onTap: () => _showPlayerProfileModal(context, player),
       child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
+        margin: const EdgeInsets.only(bottom: 10),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(14),
           border: Border.all(
-            color: isCaptain ? const Color(0xFFF59E0B) : accentColor,
-            width: isCaptain ? 2.5 : 2,
+            color: const Color(0xFFF1F5F9),
+            width: 1.2,
           ),
           boxShadow: [
             BoxShadow(
-              color: isCaptain
-                  ? const Color(0xFFF59E0B).withValues(alpha: 0.15)
-                  : Colors.black.withValues(alpha: 0.04),
-              blurRadius: 10,
-              offset: const Offset(0, 3),
+              color: Colors.black.withValues(alpha: 0.03),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
             ),
           ],
         ),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(18),
-          child: Stack(
-            children: [
-              // Rayas diagonales estilizadas en esquina inferior derecha
-              Positioned(
-                right: -12,
-                bottom: -18,
-                child: Transform.rotate(
-                  angle: -0.65,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        width: 5,
-                        height: 70,
-                        color: accentColor.withValues(alpha: 0.35),
-                      ),
-                      const SizedBox(width: 4),
-                      Container(
-                        width: 9,
-                        height: 70,
-                        color: accentColor.withValues(alpha: 0.8),
-                      ),
-                    ],
+          borderRadius: BorderRadius.circular(14),
+          child: IntrinsicHeight(
+            child: Row(
+              children: [
+                // Franja vertical verde/teal a la izquierda como en Figma
+                Container(
+                  width: 3.8,
+                  decoration: const BoxDecoration(
+                    color: Color(0xFF00A398), // Teal oficial de Liverpool
                   ),
                 ),
-              ),
 
-              // Contenido
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 12,
-                ),
-                child: Row(
-                  children: [
-                    // Avatar con anillo de color temático y soporte para fotos de cámara/galería
-                    Container(
-                      padding: const EdgeInsets.all(2.5),
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: isCaptain
-                              ? const Color(0xFFF59E0B)
-                              : accentColor,
-                          width: 2.2,
-                        ),
-                      ),
-                      child: CircleAvatar(
-                        radius: 26,
-                        backgroundColor: const Color(0xFFF1F5F9),
-                        backgroundImage: player.avatarImage,
-                        child: player.avatarImage == null
-                            ? const Icon(
-                                Icons.person,
-                                color: Color(0xFF94A3B8),
-                                size: 30,
-                              )
-                            : null,
-                      ),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 12,
                     ),
-                    const SizedBox(width: 14),
+                    child: Row(
+                      children: [
+                        // Círculo avatar con iniciales (estilo Figma) o foto del jugador
+                        Container(
+                          width: 44,
+                          height: 44,
+                          decoration: const BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Color(0xFFE6F4F1), // Menta/teal suave
+                          ),
+                          child: Center(
+                            child: player.avatarImage != null
+                                ? CircleAvatar(
+                                    radius: 22,
+                                    backgroundImage: player.avatarImage,
+                                  )
+                                : Text(
+                                    initials,
+                                    style: const TextStyle(
+                                      color: Color(0xFF007A6E),
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w800,
+                                      letterSpacing: 0.5,
+                                    ),
+                                  ),
+                          ),
+                        ),
 
-                    // Nombres
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Row(
+                        const SizedBox(width: 14),
+
+                        // Nombres: Primer nombre arriba en gris, Apellido abajo en negro negrita
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
                             children: [
+                              Row(
+                                children: [
+                                  Text(
+                                    firstName,
+                                    style: const TextStyle(
+                                      fontSize: 12.5,
+                                      fontWeight: FontWeight.w500,
+                                      color: Color(0xFF64748B),
+                                    ),
+                                  ),
+                                  if (isCaptain) ...[
+                                    const SizedBox(width: 6),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 5,
+                                        vertical: 1.5,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFFF59E0B),
+                                        borderRadius: BorderRadius.circular(4),
+                                      ),
+                                      child: const Text(
+                                        '👑 CAP',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w900,
+                                          fontSize: 8.5,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                              const SizedBox(height: 1),
                               Text(
-                                firstName,
+                                lastName,
                                 style: const TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w400,
-                                  color: Color(0xFF1E293B),
-                                  letterSpacing: 0.2,
+                                  fontSize: 17,
+                                  fontWeight: FontWeight.w800,
+                                  color: Color(0xFF0F172A),
+                                  height: 1.15,
                                 ),
                               ),
-                              if (isCaptain) ...[
-                                const SizedBox(width: 6),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 6,
-                                    vertical: 1.5,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    gradient: const LinearGradient(
-                                      colors: [
-                                        Color(0xFFF59E0B),
-                                        Color(0xFFD97706),
-                                      ],
-                                    ),
-                                    borderRadius: BorderRadius.circular(6),
-                                  ),
-                                  child: const Text(
-                                    '👑 CAP',
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.w900,
-                                      fontSize: 9.5,
-                                    ),
-                                  ),
-                                ),
-                              ],
                             ],
                           ),
-                          Text(
-                            lastName,
-                            style: const TextStyle(
-                              fontSize: 22,
-                              fontWeight: FontWeight.w900,
-                              color: Color(0xFF0F172A),
-                              height: 1.1,
-                              letterSpacing: 0.3,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    // Estatus ACTIVO y Número unificado
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 2.5,
-                          ),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFE8F8F0),
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: Text(
-                            player.status.toUpperCase(),
-                            style: const TextStyle(
-                              color: Color(0xFF10B981),
-                              fontSize: 9.5,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: 0.6,
-                            ),
-                          ),
                         ),
-                        const SizedBox(height: 6),
-                        _buildUnifiedJerseyBadge(player.jerseyNumber, styleIndex: index),
+
+                        // Lado derecho: Número dorsal en rojo y estado ACTIVO en verde
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              '${player.jerseyNumber}',
+                              style: const TextStyle(
+                                fontSize: 23,
+                                fontWeight: FontWeight.w900,
+                                color: Color(0xFFC8102E), // Rojo Liverpool
+                                height: 1.0,
+                              ),
+                            ),
+                            const SizedBox(height: 3),
+                            Text(
+                              player.status.toUpperCase(),
+                              style: const TextStyle(
+                                color: Color(0xFF10B981), // Verde activo
+                                fontSize: 9.5,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ],
+                        ),
                       ],
                     ),
-                    const SizedBox(width: 4),
-                  ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
     );
-  }
-
-  // 3 estilos rotativos de dorsal según índice
-  Widget _buildUnifiedJerseyBadge(int number, {int styleIndex = 0}) {
-    switch (styleIndex % 3) {
-      // Estilo 0: Rojo rubí hexagonal con borde cyan
-      case 0:
-        return Container(
-          width: 46,
-          height: 50,
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [Color(0xFFD31027), Color(0xFF8B0000)],
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-            ),
-            borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(8),
-              topRight: Radius.circular(8),
-              bottomLeft: Radius.circular(22),
-              bottomRight: Radius.circular(22),
-            ),
-            border: Border.all(color: const Color(0xFF00E5FF), width: 1.8),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFFD31027).withValues(alpha: 0.45),
-                blurRadius: 10,
-                offset: const Offset(0, 3),
-              ),
-            ],
-          ),
-          child: Center(
-            child: Text(
-              '$number',
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w900,
-                fontSize: 21,
-                letterSpacing: 0.5,
-              ),
-            ),
-          ),
-        );
-
-      // Estilo 1: Escudo medieval azul marino con borde dorado
-      case 1:
-        return SizedBox(
-          width: 46,
-          height: 52,
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              CustomPaint(
-                size: const Size(46, 52),
-                painter: _ShieldPainter(
-                  fillColor: const Color(0xFF0A2342),
-                  borderColor: const Color(0xFFD4AF37),
-                ),
-              ),
-              Text(
-                '$number',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w900,
-                  fontSize: 19,
-                  letterSpacing: 0.5,
-                ),
-              ),
-            ],
-          ),
-        );
-
-      // Estilo 2: Círculo púrpura con doble anillo
-      default:
-        return Container(
-          width: 50,
-          height: 50,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            gradient: const RadialGradient(
-              colors: [Color(0xFF7C3AED), Color(0xFF4C1D95)],
-              center: Alignment(-0.3, -0.3),
-              radius: 1.2,
-            ),
-            border: Border.all(color: const Color(0xFFDDD6FE), width: 2.5),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFF7C3AED).withValues(alpha: 0.4),
-                blurRadius: 10,
-                offset: const Offset(0, 3),
-              ),
-            ],
-          ),
-          child: Center(
-            child: Container(
-              width: 38,
-              height: 38,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: Colors.white.withValues(alpha: 0.25),
-                  width: 1.5,
-                ),
-              ),
-              child: Center(
-                child: Text(
-                  '$number',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w900,
-                    fontSize: 19,
-                    letterSpacing: 0.5,
-                  ),
-                ),
-              ),
-            ),
-          ),
-        );
-    }
   }
 
   // ==================== MODALES Y DIÁLOGOS ====================
@@ -3490,67 +3322,63 @@ class _ProfileScreenState extends State<ProfileScreen> {
 }
 
 // ============================================================
-// Pintor del escudo medieval (azul marino con borde dorado)
+// Pintor geométrico del encabezado estilo Figma Liverpool F.C.
 // ============================================================
-class _ShieldPainter extends CustomPainter {
-  final Color fillColor;
-  final Color borderColor;
-
-  _ShieldPainter({required this.fillColor, required this.borderColor});
-
+class _HeaderGeometricPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final w = size.width;
     final h = size.height;
 
-    final path = Path()
-      ..moveTo(w * 0.5, h)
-      ..lineTo(0, h * 0.6)
-      ..lineTo(0, 0)
+    // Cuña angular rojo oscuro / sombra
+    final darkRedPaint = Paint()
+      ..color = const Color(0xFF8B0014)
+      ..style = PaintingStyle.fill;
+    final pathDark = Path()
+      ..moveTo(w * 0.58, 0)
       ..lineTo(w, 0)
-      ..lineTo(w, h * 0.6)
+      ..lineTo(w, h)
+      ..lineTo(w * 0.70, h)
       ..close();
+    canvas.drawPath(pathDark, darkRedPaint);
 
-    // Relleno
-    canvas.drawPath(path, Paint()..color = fillColor);
-
-    // Borde dorado
-    canvas.drawPath(
-      path,
-      Paint()
-        ..color = borderColor
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 2.2,
-    );
+    // Cuña angular verde esmeralda / teal característica de Liverpool
+    final tealPaint = Paint()
+      ..color = const Color(0xFF00A398)
+      ..style = PaintingStyle.fill;
+    final pathTeal = Path()
+      ..moveTo(w * 0.72, h)
+      ..lineTo(w, h * 0.36)
+      ..lineTo(w, h)
+      ..close();
+    canvas.drawPath(pathTeal, tealPaint);
   }
 
   @override
-  bool shouldRepaint(_ShieldPainter old) =>
-      fillColor != old.fillColor || borderColor != old.borderColor;
+  bool shouldRepaint(_HeaderGeometricPainter old) => false;
 }
 
 // ============================================================
-// Pintor de rayas diagonales semi-transparentes (tarjeta de partido)
+// Pintor geométrico de la tarjeta de próximo partido estilo Figma
 // ============================================================
-class _DiagonalStripesPainter extends CustomPainter {
+class _MatchCardGeometricPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.white.withValues(alpha: 0.07)
-      ..strokeWidth = 22
-      ..style = PaintingStyle.stroke;
+    final w = size.width;
+    final h = size.height;
 
-    // 6 rayas diagonales espaciadas
-    for (int i = -2; i < 8; i++) {
-      final x = i * 36.0;
-      canvas.drawLine(
-        Offset(x, 0),
-        Offset(x + size.height, size.height),
-        paint,
-      );
-    }
+    // Sutil corte diagonal oscuro en la mitad inferior derecha
+    final darkCutPaint = Paint()
+      ..color = const Color(0xFF071F1F)
+      ..style = PaintingStyle.fill;
+    final path = Path()
+      ..moveTo(w * 0.46, h)
+      ..lineTo(w, h * 0.12)
+      ..lineTo(w, h)
+      ..close();
+    canvas.drawPath(path, darkCutPaint);
   }
 
   @override
-  bool shouldRepaint(_DiagonalStripesPainter old) => false;
+  bool shouldRepaint(_MatchCardGeometricPainter old) => false;
 }
