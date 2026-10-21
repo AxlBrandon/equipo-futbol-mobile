@@ -4,6 +4,7 @@ import 'package:equipo_futbol_mobile/services/team_search_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import 'models/match_model.dart';
 import 'models/player.dart';
@@ -67,7 +68,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
   final List<Widget> _screens = const [
     HomeScreen(),
-    AttendanceScreen(),
+    MatchesScreen(),
     PaymentsScreen(),
     ProfileScreen(),
   ];
@@ -203,29 +204,50 @@ class _HomeScreenState extends State<HomeScreen> {
 
                   const SizedBox(height: 14),
 
-                  // LISTA DE TARJETAS DE JUGADORES ACTIVOS
-                  ListView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    padding: EdgeInsets.zero,
-                    itemCount: activePlayers.length,
-                    itemBuilder: (context, index) {
-                      final player = activePlayers[index];
-                      return _buildPlayerCard(player, index);
-                    },
-                  ),
-
-                  const SizedBox(height: 14),
-                  const Center(
-                    child: Text(
-                      'Partido y plantilla de ejemplo',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: Color(0xFF94A3B8),
-                        fontWeight: FontWeight.w500,
+                  if (activePlayers.isEmpty)
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(24),
+                      margin: const EdgeInsets.only(bottom: 20),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: const Color(0xFFF1F5F9)),
                       ),
+                      child: Column(
+                        children: [
+                          Icon(Icons.group_add_outlined, size: 48, color: Colors.grey.shade400),
+                          const SizedBox(height: 10),
+                          const Text(
+                            'Aún no hay jugadores registrados',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 15,
+                              color: Color(0xFF0F172A),
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          const Text(
+                            'Comienza agregando los jugadores de tu equipo con su dorsal, nombre y foto.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(color: Color(0xFF64748B), fontSize: 12),
+                          ),
+                        ],
+                      ),
+                    )
+                  else
+                    // LISTA DE TARJETAS DE JUGADORES ACTIVOS
+                    ListView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      padding: EdgeInsets.zero,
+                      itemCount: activePlayers.length,
+                      itemBuilder: (context, index) {
+                        final player = activePlayers[index];
+                        return _buildPlayerCard(player, index);
+                      },
                     ),
-                  ),
+
                   const SizedBox(height: 28),
                 ],
               ),
@@ -309,27 +331,20 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
 
-                  // Escudo oficial Liverpool a la derecha sobre el corte teal
-                  Container(
-                    width: 66,
-                    height: 66,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.15),
-                          blurRadius: 8,
-                          offset: const Offset(0, 3),
+                  // Escudo oficial Liverpool a la derecha, grande y fusionado con el fondo
+                  Opacity(
+                    opacity: 0.88,
+                    child: SizedBox(
+                      width: 95,
+                      height: 95,
+                      child: Image.asset(
+                        'assets/images/liverpool_logo.png',
+                        fit: BoxFit.contain,
+                        errorBuilder: (_, _, _) => const Icon(
+                          Icons.shield,
+                          color: Colors.white70,
+                          size: 70,
                         ),
-                      ],
-                    ),
-                    child: Image.asset(
-                      'assets/images/liverpool_logo.png',
-                      fit: BoxFit.contain,
-                      errorBuilder: (_, _, _) => const Icon(
-                        Icons.shield,
-                        color: Colors.white,
-                        size: 44,
                       ),
                     ),
                   ),
@@ -373,37 +388,16 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
 
-              // Botón sutil para agendar / cambiar partido
-              Positioned(
-                top: 8,
-                right: 85,
-                child: GestureDetector(
-                  onTap: () => _showNewMatchDialog(context),
-                  child: Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.08),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.edit_calendar,
-                      color: Colors.white70,
-                      size: 14,
-                    ),
-                  ),
-                ),
-              ),
-
               // Contenido de la tarjeta
               Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Fila superior: "PRÓXIMO PARTIDO" y badge "POR JUGAR"
+                    // Fila superior: "PRÓXIMO PARTIDO" y badge "POR JUGAR" con botón de registro debajo
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      crossAxisAlignment: CrossAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const Text(
                           'PRÓXIMO PARTIDO',
@@ -414,24 +408,67 @@ class _HomeScreenState extends State<HomeScreen> {
                             letterSpacing: 0.5,
                           ),
                         ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 9,
-                            vertical: 3.5,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.12),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: const Text(
-                            'POR JUGAR',
-                            style: TextStyle(
-                              color: Color(0xFF5EEAD4), // Menta suave
-                              fontSize: 10,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: 0.6,
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 9,
+                                vertical: 3.5,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: const Text(
+                                'POR JUGAR',
+                                style: TextStyle(
+                                  color: Color(0xFF5EEAD4), // Menta suave
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: 0.6,
+                                ),
+                              ),
                             ),
-                          ),
+                            const SizedBox(height: 5),
+                            // Botón de registro de partido ubicado justo debajo de POR JUGAR
+                            GestureDetector(
+                              onTap: () => _showNewMatchDialog(context),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withValues(alpha: 0.15),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                    color: Colors.white.withValues(alpha: 0.25),
+                                  ),
+                                ),
+                                child: const Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.edit_calendar,
+                                      color: Colors.white,
+                                      size: 13,
+                                    ),
+                                    SizedBox(width: 4),
+                                    Text(
+                                      'Registrar partido',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
@@ -443,20 +480,20 @@ class _HomeScreenState extends State<HomeScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceAround,
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        // Liverpool
+                        // Liverpool (Escudo aumentado)
                         Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             SizedBox(
-                              width: 44,
-                              height: 44,
+                              width: 58,
+                              height: 58,
                               child: Image.asset(
                                 'assets/images/liverpool_logo.png',
                                 fit: BoxFit.contain,
                                 errorBuilder: (_, _, _) => const Icon(
                                   Icons.shield,
                                   color: Color(0xFFC8102E),
-                                  size: 36,
+                                  size: 46,
                                 ),
                               ),
                             ),
@@ -532,13 +569,15 @@ class _HomeScreenState extends State<HomeScreen> {
                                       )
                                     : Container(
                                         color: const Color(0xFFC8102E),
-                                        child: const Center(
+                                        child: Center(
                                           child: Text(
-                                            'FCB',
-                                            style: TextStyle(
+                                            match.opponent.isNotEmpty
+                                                ? match.opponent.substring(0, 1).toUpperCase()
+                                                : '?',
+                                            style: const TextStyle(
                                               color: Colors.white,
                                               fontWeight: FontWeight.w900,
-                                              fontSize: 12,
+                                              fontSize: 14,
                                             ),
                                           ),
                                         ),
@@ -547,7 +586,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                             const SizedBox(height: 6),
                             Text(
-                              match.opponent,
+                              match.opponent.isNotEmpty ? match.opponent : 'Por definir',
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 13,
@@ -1951,22 +1990,61 @@ class _HomeScreenState extends State<HomeScreen> {
                       width: double.infinity,
                       height: 50,
                       child: ElevatedButton(
-                        onPressed: () {
+                        onPressed: () async {
+                          final opp = opponentCtrl.text.trim().isNotEmpty
+                              ? opponentCtrl.text.trim()
+                              : 'Rival';
+                          final logo = selectedLogo.isNotEmpty
+                              ? selectedLogo
+                              : 'https://www.thesportsdb.com/images/media/team/badge/default.png';
+                          final matchDt = DateTime(
+                            selectedDate.year,
+                            selectedDate.month,
+                            selectedDate.day,
+                            selectedTime.hour,
+                            selectedTime.minute,
+                          );
+                          final formattedDate = formatMatchDateTime(selectedDate, selectedTime);
+                          final location = locationCtrl.text.trim().isNotEmpty
+                              ? locationCtrl.text.trim()
+                              : TeamState.mainVenue;
+
                           Navigator.pop(ctx);
                           _state.updateMatch(
                             MatchModel(
-                              opponent: opponentCtrl.text.trim().isNotEmpty
-                                  ? opponentCtrl.text.trim()
-                                  : 'Rival',
-                              opponentLogo: selectedLogo.isNotEmpty
-                                  ? selectedLogo
-                                  : 'https://www.thesportsdb.com/images/media/team/badge/default.png',
-                              matchDate: formatMatchDateTime(selectedDate, selectedTime),
-                              matchLocation: locationCtrl.text.trim().isNotEmpty
-                                  ? locationCtrl.text.trim()
-                                  : TeamState.mainVenue,
+                              opponent: opp,
+                              opponentLogo: logo,
+                              matchDate: formattedDate,
+                              matchLocation: location,
+                              matchDateTime: matchDt,
                             ),
+                            previousMatchDateTime: matchDt,
                           );
+
+                          // Abrir WhatsApp con formato de encuesta de asistencia
+                          final pollMsg =
+                              '⚽ *CONVOCATORIA - LIVERPOOL F.C.*\n\n'
+                              '🏆 *Próximo Partido:* Liverpool vs $opp\n'
+                              '📅 *Fecha y Horario:* $formattedDate\n'
+                              '📍 *Sede:* $location\n\n'
+                              '📊 *ENCUESTA DE ASISTENCIA:*\n'
+                              '1️⃣ *Sí voy* ✅\n'
+                              '2️⃣ *No voy* ❌\n\n'
+                              'Favor de confirmar su asistencia en este grupo.';
+
+                          final encoded = Uri.encodeComponent(pollMsg);
+                          final waUri = Uri.parse('whatsapp://send?text=$encoded');
+                          final webWaUri = Uri.parse('https://api.whatsapp.com/send?text=$encoded');
+
+                          try {
+                            if (await canLaunchUrl(waUri)) {
+                              await launchUrl(waUri, mode: LaunchMode.externalApplication);
+                            } else if (await canLaunchUrl(webWaUri)) {
+                              await launchUrl(webWaUri, mode: LaunchMode.externalApplication);
+                            }
+                          } catch (e) {
+                            debugPrint('Error abriendo WhatsApp: $e');
+                          }
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFFD31027),
@@ -2153,7 +2231,7 @@ class _HomeScreenState extends State<HomeScreen> {
   // 6. Registrar Abono / Pago rápido
   void _showRecordPaymentDialog(BuildContext context, Player player) {
     String concept = 'Arbitraje';
-    final amountCtrl = TextEditingController(text: '50');
+    final amountCtrl = TextEditingController();
 
     showDialog(
       context: context,
@@ -2168,40 +2246,40 @@ class _HomeScreenState extends State<HomeScreen> {
                 items: const [
                   DropdownMenuItem(
                     value: 'Arbitraje',
-                    child: Text('Arbitraje (\$50 por partido)'),
+                    child: Text('Arbitraje'),
                   ),
                   DropdownMenuItem(
                     value: 'Inscripción',
-                    child: Text('Inscripción (\$100)'),
+                    child: Text('Inscripción'),
                   ),
                   DropdownMenuItem(
                     value: 'Horario',
-                    child: Text('Horario (\$100)'),
+                    child: Text('Horario'),
                   ),
                   DropdownMenuItem(
                     value: 'Uniforme',
-                    child: Text('Uniforme (\$300)'),
+                    child: Text('Uniforme'),
                   ),
                 ],
                 onChanged: (val) {
                   if (val != null) {
                     setPaymentState(() {
                       concept = val;
-                      amountCtrl.text = val == 'Arbitraje' ? '50' : '100';
                     });
                   }
                 },
                 decoration: const InputDecoration(
-                  labelText: 'Rubro / Concepto',
+                  labelText: 'Rubro',
                 ),
               ),
               const SizedBox(height: 12),
               TextField(
                 controller: amountCtrl,
-                keyboardType: TextInputType.number,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
                 decoration: const InputDecoration(
                   labelText: 'Monto a Abonar (\$)',
                   prefixText: '\$ ',
+                  hintText: 'Cualquier monto',
                 ),
               ),
             ],
@@ -2234,7 +2312,895 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-// ==================== 2. ASISTENCIA ====================
+// ==================== 2. PARTIDOS Y HISTORIAL ====================
+class MatchesScreen extends StatefulWidget {
+  const MatchesScreen({super.key});
+
+  @override
+  State<MatchesScreen> createState() => _MatchesScreenState();
+}
+
+class _MatchesScreenState extends State<MatchesScreen> {
+  final TeamState _state = TeamState();
+
+  @override
+  Widget build(BuildContext context) {
+    final match = _state.currentMatch;
+    final hasCurrentMatch = match.opponent.isNotEmpty;
+
+    return Scaffold(
+      backgroundColor: const Color(0xFFF8F9FA),
+      appBar: AppBar(
+        title: const Text(
+          'Partidos y Resultados',
+          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+        ),
+        backgroundColor: const Color(0xFFC8102E),
+        elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.how_to_reg, color: Colors.white),
+            tooltip: 'Control de Asistencia en Cancha',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const AttendanceScreen()),
+              );
+            },
+          ),
+        ],
+      ),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          // 1. SECCIÓN PRÓXIMO PARTIDO
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'PRÓXIMO PARTIDO',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w900,
+                  color: Color(0xFF64748B),
+                  letterSpacing: 0.8,
+                ),
+              ),
+              if (hasCurrentMatch)
+                TextButton.icon(
+                  icon: const Icon(Icons.archive_outlined, size: 16, color: Color(0xFFC8102E)),
+                  label: const Text(
+                    'Archivar al Historial',
+                    style: TextStyle(
+                      color: Color(0xFFC8102E),
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  onPressed: () => _confirmArchiveMatch(context),
+                ),
+            ],
+          ),
+          const SizedBox(height: 8),
+
+          // Tarjeta del próximo partido
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: const Color(0xFF0E2E2E),
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.08),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: hasCurrentMatch
+                ? Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: const Text(
+                              'POR JUGAR',
+                              style: TextStyle(
+                                color: Color(0xFF5EEAD4),
+                                fontSize: 10,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ),
+                          ElevatedButton.icon(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF10B981),
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                            ),
+                            icon: const Icon(Icons.fact_check, size: 15, color: Colors.white),
+                            label: const Text(
+                              'Tomar Asistencia',
+                              style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+                            ),
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (_) => const AttendanceScreen()),
+                              );
+                            },
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceAround,
+                        children: [
+                          Column(
+                            children: [
+                              SizedBox(
+                                width: 50,
+                                height: 50,
+                                child: Image.asset(
+                                  'assets/images/liverpool_logo.png',
+                                  fit: BoxFit.contain,
+                                  errorBuilder: (_, _, _) => const Icon(Icons.shield, color: Color(0xFFC8102E), size: 40),
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              const Text('Liverpool', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+                            ],
+                          ),
+                          const Text(
+                            'VS',
+                            style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w900),
+                          ),
+                          Column(
+                            children: [
+                              Container(
+                                width: 50,
+                                height: 50,
+                                decoration: const BoxDecoration(shape: BoxShape.circle, color: Colors.white),
+                                padding: const EdgeInsets.all(4),
+                                child: ClipOval(
+                                  child: match.opponentLogo.isNotEmpty
+                                      ? Image.network(
+                                          match.opponentLogo,
+                                          fit: BoxFit.contain,
+                                          errorBuilder: (_, _, _) => const Icon(Icons.shield, color: Color(0xFFC8102E)),
+                                        )
+                                      : const Icon(Icons.shield, color: Color(0xFFC8102E)),
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(match.opponent, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+                            ],
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Container(height: 1, color: Colors.white12),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          const Icon(Icons.calendar_today_outlined, size: 13, color: Colors.white70),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              match.matchDate,
+                              style: const TextStyle(color: Colors.white70, fontSize: 12),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          const Icon(Icons.location_on_outlined, size: 13, color: Colors.white70),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              match.matchLocation,
+                              style: const TextStyle(color: Colors.white70, fontSize: 12),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  )
+                : const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 20),
+                    child: Center(
+                      child: Text(
+                        'Sin partido programado.\nToca en "Registrar partido" en Inicio para agregar el siguiente rival.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: Colors.white70, fontSize: 13),
+                      ),
+                    ),
+                  ),
+          ),
+          const SizedBox(height: 24),
+
+          // 2. SECCIÓN PARTIDOS ANTERIORES (HISTORIAL)
+          Row(
+            children: [
+              const Text(
+                'PARTIDOS ANTERIORES',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w900,
+                  color: Color(0xFF64748B),
+                  letterSpacing: 0.8,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFC8102E),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  '${_state.pastMatches.length}',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+
+          if (_state.pastMatches.isEmpty)
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: const Color(0xFFF1F5F9)),
+              ),
+              child: Column(
+                children: [
+                  Icon(Icons.history_outlined, size: 48, color: Colors.grey.shade400),
+                  const SizedBox(height: 10),
+                  const Text(
+                    'No hay partidos anteriores archivados',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 15,
+                      color: Color(0xFF0F172A),
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  const Text(
+                    'Cuando un partido concluya o agendes uno nuevo, se archivará aquí para que captures su marcador y consultes la asistencia.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: Color(0xFF64748B), fontSize: 12),
+                  ),
+                ],
+              ),
+            )
+          else
+            ...List.generate(_state.pastMatches.length, (index) {
+              final past = _state.pastMatches[index];
+              return _buildPastMatchCard(index, past);
+            }),
+
+          const SizedBox(height: 40),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPastMatchCard(int index, PastMatch match) {
+    final presentCount = match.presentPlayerIds.length;
+    final missedCount = match.confirmedPlayerIds
+        .where((id) => !match.presentPlayerIds.contains(id))
+        .length;
+
+    return InkWell(
+      onTap: () => _showPastMatchDetailsModal(context, index, match),
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: const Color(0xFFF1F5F9)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.03),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            // Escudo rival
+            Container(
+              width: 46,
+              height: 46,
+              decoration: const BoxDecoration(
+                shape: BoxShape.circle,
+                color: Color(0xFFF8FAFC),
+              ),
+              padding: const EdgeInsets.all(4),
+              child: ClipOval(
+                child: match.opponentLogo.isNotEmpty
+                    ? Image.network(
+                        match.opponentLogo,
+                        fit: BoxFit.contain,
+                        errorBuilder: (_, _, _) => const Icon(Icons.shield, color: Color(0xFFC8102E)),
+                      )
+                    : const Icon(Icons.shield, color: Color(0xFFC8102E)),
+              ),
+            ),
+            const SizedBox(width: 12),
+            // Información del partido
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Liverpool vs ${match.opponent}',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w800,
+                      fontSize: 14.5,
+                      color: Color(0xFF0F172A),
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    match.matchDate,
+                    style: const TextStyle(color: Color(0xFF64748B), fontSize: 11.5),
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFE8F8F0),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          '$presentCount asistieron',
+                          style: const TextStyle(
+                            color: Color(0xFF10B981),
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      if (missedCount > 0) ...[
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFEE2E2),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            '$missedCount no fueron',
+                            style: const TextStyle(
+                              color: Color(0xFFDC2626),
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            // Marcador
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF0E2E2E),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    '${match.homeScore} - ${match.awayScore}',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w900,
+                      fontSize: 17,
+                      letterSpacing: 1,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 3),
+                const Text(
+                  'Toca para ver / editar',
+                  style: TextStyle(color: Color(0xFF94A3B8), fontSize: 9.5),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _confirmArchiveMatch(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Archivar Partido Actual'),
+        content: const Text(
+          '¿Deseas archivar el partido actual al Historial de Partidos Anteriores?\n\n'
+          'Se guardarán las asistencias registradas y podrás capturar el marcador final.',
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancelar')),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFC8102E)),
+            onPressed: () {
+              _state.archiveCurrentMatchAsPast();
+              Navigator.pop(ctx);
+              setState(() {});
+            },
+            child: const Text('Archivar', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showPastMatchDetailsModal(BuildContext context, int index, PastMatch match) {
+    final homeCtrl = TextEditingController(text: match.homeScore.toString());
+    final awayCtrl = TextEditingController(text: match.awayScore.toString());
+    bool forceUnlock = false;
+
+    // Control de la regla de 2 horas
+    bool canEdit = true;
+    String lockReason = '';
+    if (match.matchDateTime != null) {
+      final unlockTime = match.matchDateTime!.add(const Duration(hours: 2));
+      if (DateTime.now().isBefore(unlockTime)) {
+        canEdit = false;
+        final remaining = unlockTime.difference(DateTime.now());
+        final h = remaining.inHours;
+        final m = remaining.inMinutes % 60;
+        lockReason = 'El marcador se podrá editar 2 horas después de la hora del partido (en $h h $m min).';
+      }
+    }
+
+    // Jugadores que sí asistieron
+    final presentPlayers = _state.players
+        .where((p) => match.presentPlayerIds.contains(p.id))
+        .toList();
+
+    // Jugadores que confirmaron RSVP pero NO asistieron
+    final confirmedDidNotAttend = _state.players
+        .where((p) => match.confirmedPlayerIds.contains(p.id) && !match.presentPlayerIds.contains(p.id))
+        .toList();
+
+    // Jugadores que asistieron sin haber confirmado
+    final attendedWithoutRsvp = _state.players
+        .where((p) => match.presentPlayerIds.contains(p.id) && !match.confirmedPlayerIds.contains(p.id))
+        .toList();
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setModalState) {
+          final isUnlocked = canEdit || forceUnlock;
+
+          return Container(
+            height: MediaQuery.of(context).size.height * 0.90,
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+            ),
+            child: Column(
+              children: [
+                const SizedBox(height: 12),
+                Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                const SizedBox(height: 12),
+
+                // Encabezado del partido
+                Container(
+                  width: double.infinity,
+                  color: const Color(0xFF0E2E2E),
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                  child: Column(
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceAround,
+                        children: [
+                          Column(
+                            children: [
+                              SizedBox(
+                                width: 48,
+                                height: 48,
+                                child: Image.asset(
+                                  'assets/images/liverpool_logo.png',
+                                  fit: BoxFit.contain,
+                                  errorBuilder: (_, _, _) => const Icon(Icons.shield, color: Color(0xFFC8102E)),
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              const Text('Liverpool', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                            ],
+                          ),
+                          // Marcador interactivo
+                          Row(
+                            children: [
+                              Container(
+                                width: 48,
+                                height: 44,
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withValues(alpha: isUnlocked ? 0.2 : 0.08),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Center(
+                                  child: isUnlocked
+                                      ? TextField(
+                                          controller: homeCtrl,
+                                          keyboardType: TextInputType.number,
+                                          textAlign: TextAlign.center,
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 22,
+                                            fontWeight: FontWeight.w900,
+                                          ),
+                                          decoration: const InputDecoration(
+                                            border: InputBorder.none,
+                                            contentPadding: EdgeInsets.zero,
+                                            isDense: true,
+                                          ),
+                                        )
+                                      : Text(
+                                          '${match.homeScore}',
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 22,
+                                            fontWeight: FontWeight.w900,
+                                          ),
+                                        ),
+                                ),
+                              ),
+                              const Padding(
+                                padding: EdgeInsets.symmetric(horizontal: 8),
+                                child: Text(
+                                  '-',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.w900,
+                                  ),
+                                ),
+                              ),
+                              Container(
+                                width: 48,
+                                height: 44,
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withValues(alpha: isUnlocked ? 0.2 : 0.08),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Center(
+                                  child: isUnlocked
+                                      ? TextField(
+                                          controller: awayCtrl,
+                                          keyboardType: TextInputType.number,
+                                          textAlign: TextAlign.center,
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 22,
+                                            fontWeight: FontWeight.w900,
+                                          ),
+                                          decoration: const InputDecoration(
+                                            border: InputBorder.none,
+                                            contentPadding: EdgeInsets.zero,
+                                            isDense: true,
+                                          ),
+                                        )
+                                      : Text(
+                                          '${match.awayScore}',
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 22,
+                                            fontWeight: FontWeight.w900,
+                                          ),
+                                        ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          Column(
+                            children: [
+                              Container(
+                                width: 48,
+                                height: 48,
+                                decoration: const BoxDecoration(shape: BoxShape.circle, color: Colors.white),
+                                padding: const EdgeInsets.all(4),
+                                child: ClipOval(
+                                  child: match.opponentLogo.isNotEmpty
+                                      ? Image.network(
+                                          match.opponentLogo,
+                                          fit: BoxFit.contain,
+                                          errorBuilder: (_, _, _) => const Icon(Icons.shield, color: Color(0xFFC8102E)),
+                                        )
+                                      : const Icon(Icons.shield, color: Color(0xFFC8102E)),
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(match.opponent, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                            ],
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      Text(
+                        '${match.matchDate} • ${match.matchLocation}',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(color: Colors.white70, fontSize: 11),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Aviso de bloqueo de 2 horas o botón de guardar
+                if (!isUnlocked)
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                    color: const Color(0xFFFEF3C7),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.lock_clock, color: Color(0xFFD97706), size: 20),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            lockReason,
+                            style: const TextStyle(
+                              color: Color(0xFF92400E),
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                        TextButton(
+                          onPressed: () => setModalState(() => forceUnlock = true),
+                          child: const Text('Desbloquear', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                        ),
+                      ],
+                    ),
+                  )
+                else
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    color: const Color(0xFFE8F8F0),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          '✏️ Puedes editar el marcador:',
+                          style: TextStyle(
+                            color: Color(0xFF065F46),
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                          ),
+                        ),
+                        ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF10B981),
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          ),
+                          icon: const Icon(Icons.check, size: 16, color: Colors.white),
+                          label: const Text('Guardar Marcador', style: TextStyle(color: Colors.white, fontSize: 12)),
+                          onPressed: () {
+                            final hs = int.tryParse(homeCtrl.text.trim()) ?? match.homeScore;
+                            final as_ = int.tryParse(awayCtrl.text.trim()) ?? match.awayScore;
+                            _state.updatePastMatchScore(index, hs, as_);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Marcador actualizado exitosamente.')),
+                            );
+                            setModalState(() {});
+                            setState(() {});
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+
+                // Lista de Asistencia al Partido
+                Expanded(
+                  child: ListView(
+                    padding: const EdgeInsets.all(16),
+                    children: [
+                      // 1. Quienes SÍ asistieron
+                      Row(
+                        children: [
+                          const Icon(Icons.check_circle, color: Color(0xFF10B981), size: 18),
+                          const SizedBox(width: 6),
+                          Text(
+                            'SÍ ASISTIERON AL PARTIDO (${presentPlayers.length})',
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w900,
+                              fontSize: 13,
+                              color: Color(0xFF0F172A),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      if (presentPlayers.isEmpty)
+                        const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 6),
+                          child: Text('No hay jugadores registrados como asistentes.', style: TextStyle(color: Colors.grey, fontSize: 12)),
+                        )
+                      else
+                        ...presentPlayers.map(
+                          (p) => ListTile(
+                            dense: true,
+                            contentPadding: EdgeInsets.zero,
+                            leading: CircleAvatar(
+                              radius: 18,
+                              backgroundColor: const Color(0xFFE8F8F0),
+                              backgroundImage: p.avatarImage,
+                              child: p.avatarImage == null
+                                  ? Text(
+                                      '#${p.jerseyNumber}',
+                                      style: const TextStyle(
+                                        color: Color(0xFF10B981),
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 11,
+                                      ),
+                                    )
+                                  : null,
+                            ),
+                            title: Text(p.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                            subtitle: Text('Dorsal #${p.jerseyNumber} • Tel: ${p.phoneNumber}', style: const TextStyle(fontSize: 11)),
+                            trailing: const Icon(Icons.done_all, color: Color(0xFF10B981), size: 18),
+                          ),
+                        ),
+
+                      const Divider(height: 24),
+
+                      // 2. Quienes CONFIRMARON pero NO fueron
+                      Row(
+                        children: [
+                          const Icon(Icons.cancel, color: Color(0xFFEF4444), size: 18),
+                          const SizedBox(width: 6),
+                          Text(
+                            'CONFIRMARON PERO NO ASISTIERON (${confirmedDidNotAttend.length})',
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w900,
+                              fontSize: 13,
+                              color: Color(0xFFDC2626),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      if (confirmedDidNotAttend.isEmpty)
+                        const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 6),
+                          child: Text(
+                            '¡Excelente! Todos los que confirmaron sí se presentaron a la cancha.',
+                            style: TextStyle(color: Color(0xFF10B981), fontSize: 12, fontWeight: FontWeight.w600),
+                          ),
+                        )
+                      else
+                        ...confirmedDidNotAttend.map(
+                          (p) => ListTile(
+                            dense: true,
+                            contentPadding: EdgeInsets.zero,
+                            leading: CircleAvatar(
+                              radius: 18,
+                              backgroundColor: const Color(0xFFFEE2E2),
+                              backgroundImage: p.avatarImage,
+                              child: p.avatarImage == null
+                                  ? Text(
+                                      '#${p.jerseyNumber}',
+                                      style: const TextStyle(
+                                        color: Color(0xFFEF4444),
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 11,
+                                      ),
+                                    )
+                                  : null,
+                            ),
+                            title: Text(
+                              p.name,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                                decoration: TextDecoration.lineThrough,
+                                color: Color(0xFF475569),
+                              ),
+                            ),
+                            subtitle: Text('Dorsal #${p.jerseyNumber} • Confirmó RSVP pero faltó', style: const TextStyle(fontSize: 11, color: Color(0xFFEF4444))),
+                            trailing: const Icon(Icons.close, color: Color(0xFFEF4444), size: 18),
+                          ),
+                        ),
+
+                      if (attendedWithoutRsvp.isNotEmpty) ...[
+                        const Divider(height: 24),
+                        // 3. Asistieron sin confirmar
+                        Row(
+                          children: [
+                            const Icon(Icons.add_circle, color: Color(0xFFF59E0B), size: 18),
+                            const SizedBox(width: 6),
+                            Text(
+                              'ASISTIERON SIN CONFIRMAR (${attendedWithoutRsvp.length})',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w900,
+                                fontSize: 13,
+                                color: Color(0xFFD97706),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        ...attendedWithoutRsvp.map(
+                          (p) => ListTile(
+                            dense: true,
+                            contentPadding: EdgeInsets.zero,
+                            leading: CircleAvatar(
+                              radius: 18,
+                              backgroundColor: const Color(0xFFFEF3C7),
+                              backgroundImage: p.avatarImage,
+                              child: p.avatarImage == null
+                                  ? Text(
+                                      '#${p.jerseyNumber}',
+                                      style: const TextStyle(
+                                        color: Color(0xFFB45309),
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 11,
+                                      ),
+                                    )
+                                  : null,
+                            ),
+                            title: Text(p.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                            subtitle: Text('Dorsal #${p.jerseyNumber} • Llegó directo a la cancha', style: const TextStyle(fontSize: 11)),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+// ==================== 3. ASISTENCIA ====================
 class AttendanceScreen extends StatefulWidget {
   const AttendanceScreen({super.key});
 
@@ -2661,34 +3627,6 @@ class _PaymentsScreenState extends State<PaymentsScreen> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          // Banner informativo de cuotas cubiertas
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: const Color(0xFFE8F8F0),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(
-                color: const Color(0xFF10B981).withValues(alpha: 0.3),
-              ),
-            ),
-            child: Row(
-              children: const [
-                Icon(Icons.verified, color: Color(0xFF10B981), size: 20),
-                SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'Inscripción, Horario y Uniforme se encuentran 100% CUBIERTOS para todo el equipo.',
-                    style: TextStyle(
-                      color: Color(0xFF065F46),
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 12),
           // Leyenda de colores
           Container(
             padding: const EdgeInsets.all(12),
@@ -2712,7 +3650,39 @@ class _PaymentsScreenState extends State<PaymentsScreen> {
             ),
           ),
           const SizedBox(height: 14),
-          ...activePlayers.map((player) {
+
+          if (activePlayers.isEmpty)
+            Container(
+              padding: const EdgeInsets.all(24),
+              margin: const EdgeInsets.only(top: 10),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: const Color(0xFFF1F5F9)),
+              ),
+              child: Column(
+                children: [
+                  Icon(Icons.payments_outlined, size: 48, color: Colors.grey.shade400),
+                  const SizedBox(height: 10),
+                  const Text(
+                    'No hay jugadores registrados',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 15,
+                      color: Color(0xFF0F172A),
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  const Text(
+                    'Agrega jugadores en la pestaña de Inicio para controlar sus cuotas de arbitraje, inscripción, horario y uniforme.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: Color(0xFF64748B), fontSize: 12),
+                  ),
+                ],
+              ),
+            )
+          else
+            ...activePlayers.map((player) {
             final arbColor = _state.getPaymentColor(player.id!, 'Arbitraje');
             final insColor = _state.getPaymentColor(player.id!, 'Inscripción');
             final horColor = _state.getPaymentColor(player.id!, 'Horario');
@@ -2836,66 +3806,194 @@ class _PaymentsScreenState extends State<PaymentsScreen> {
     );
   }
 
-  void _showPaymentOptions(BuildContext context, Player player) {
-    showModalBottomSheet(
+  void _showPayDialog(BuildContext context, Player player, String concept, double remaining) {
+    final amountCtrl = TextEditingController(text: remaining.toStringAsFixed(0));
+
+    showDialog(
       context: context,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) => Container(
-        padding: const EdgeInsets.all(20),
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-        ),
-        child: Column(
+      builder: (dCtx) => AlertDialog(
+        title: Text('Abonar $concept - ${player.name}'),
+        content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Pagos de ${player.name}',
-              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900),
+              'Resta por cubrir: \$${remaining.toStringAsFixed(0)}',
+              style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFFEF4444)),
             ),
             const SizedBox(height: 12),
-            ListTile(
-              leading: const Icon(
-                Icons.sports_soccer,
-                color: Color(0xFFD31027),
-              ),
-              title: const Text('Arbitraje (\$50 por partido)'),
-              subtitle: Text(
-                'Abonado: \$${_state.paidArbitraje[player.id] ?? 0.0}',
-              ),
-              trailing: ElevatedButton(
-                onPressed: () {
-                  _state.recordPayment(player.id!, 'Arbitraje', 50.0);
-                  Navigator.pop(ctx);
-                  setState(() {});
-                },
-                child: const Text('Pagar \$50'),
-              ),
-            ),
-            ListTile(
-              leading: const Icon(Icons.emoji_events, color: Color(0xFF10B981)),
-              title: const Text('Inscripción al Torneo (\$100)'),
-              subtitle: Text(
-                'Abonado: \$${_state.paidInscripcion[player.id] ?? 0.0} (100% Cubierto)',
-              ),
-            ),
-            ListTile(
-              leading: const Icon(Icons.access_time, color: Color(0xFF10B981)),
-              title: const Text('Horario (\$100)'),
-              subtitle: Text(
-                'Abonado: \$${_state.paidHorario[player.id] ?? 0.0} (100% Cubierto)',
-              ),
-            ),
-            ListTile(
-              leading: const Icon(Icons.checkroom, color: Color(0xFF10B981)),
-              title: const Text('Uniforme Oficial (\$300)'),
-              subtitle: Text(
-                'Abonado: \$${_state.paidUniforme[player.id] ?? 0.0} (100% Cubierto)',
+            TextField(
+              controller: amountCtrl,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              autofocus: true,
+              decoration: const InputDecoration(
+                labelText: 'Monto a pagar (\$)',
+                prefixText: '\$ ',
+                hintText: 'Cualquier monto',
               ),
             ),
           ],
         ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dCtx),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF10B981),
+            ),
+            onPressed: () {
+              final amt = double.tryParse(amountCtrl.text.trim()) ?? 0.0;
+              if (amt > 0) {
+                _state.recordPayment(player.id!, concept, amt);
+                Navigator.pop(dCtx);
+                Navigator.pop(context);
+                setState(() {});
+              }
+            },
+            child: const Text('Confirmar Pago', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showPaymentOptions(BuildContext context, Player player) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setModalState) {
+          final arbPaid = _state.paidArbitraje[player.id] ?? 0.0;
+          final insPaid = _state.paidInscripcion[player.id] ?? 0.0;
+          final horPaid = _state.paidHorario[player.id] ?? 0.0;
+          final uniPaid = _state.paidUniforme[player.id] ?? 0.0;
+
+          Widget buildPaymentTile({
+            required IconData icon,
+            required Color iconColor,
+            required String title,
+            required String concept,
+            required double paid,
+            required double target,
+          }) {
+            final remaining = (target - paid).clamp(0.0, target);
+            final isCovered = paid >= target && target > 0;
+
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: iconColor.withValues(alpha: 0.12),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(icon, color: iconColor, size: 20),
+                ),
+                title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                subtitle: Text(
+                  isCovered
+                      ? '✅ Cubierto al 100% (\$${target.toStringAsFixed(0)})'
+                      : '\$${paid.toStringAsFixed(0)} de \$${target.toStringAsFixed(0)} • Falta: \$${remaining.toStringAsFixed(0)}',
+                  style: TextStyle(
+                    color: isCovered ? const Color(0xFF10B981) : const Color(0xFF64748B),
+                    fontWeight: isCovered ? FontWeight.bold : FontWeight.w500,
+                    fontSize: 12,
+                  ),
+                ),
+                trailing: isCovered
+                    ? null
+                    : ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF10B981),
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        ),
+                        onPressed: () => _showPayDialog(context, player, concept, remaining),
+                        child: Text(
+                          'Faltan \$${remaining.toStringAsFixed(0)}',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+              ),
+            );
+          }
+
+          return Container(
+            padding: const EdgeInsets.all(20),
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade300,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 14),
+                Text(
+                  'Pagos de ${player.name}',
+                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Dorsal #${player.jerseyNumber} • Playera: ${player.jerseyName}',
+                  style: const TextStyle(color: Color(0xFF64748B), fontSize: 12),
+                ),
+                const SizedBox(height: 12),
+                buildPaymentTile(
+                  icon: Icons.sports_soccer,
+                  iconColor: const Color(0xFFD31027),
+                  title: 'Arbitraje (\$${_state.feeArbitraje.toStringAsFixed(0)} por partido)',
+                  concept: 'Arbitraje',
+                  paid: arbPaid,
+                  target: _state.feeArbitraje,
+                ),
+                buildPaymentTile(
+                  icon: Icons.emoji_events,
+                  iconColor: const Color(0xFF10B981),
+                  title: 'Inscripción (\$${_state.feeInscripcion.toStringAsFixed(0)})',
+                  concept: 'Inscripción',
+                  paid: insPaid,
+                  target: _state.feeInscripcion,
+                ),
+                buildPaymentTile(
+                  icon: Icons.access_time,
+                  iconColor: const Color(0xFF0077B6),
+                  title: 'Horario (\$${_state.feeHorario.toStringAsFixed(0)})',
+                  concept: 'Horario',
+                  paid: horPaid,
+                  target: _state.feeHorario,
+                ),
+                buildPaymentTile(
+                  icon: Icons.checkroom,
+                  iconColor: const Color(0xFF7C3AED),
+                  title: 'Uniforme (\$${_state.feeUniforme.toStringAsFixed(0)})',
+                  concept: 'Uniforme',
+                  paid: uniPaid,
+                  target: _state.feeUniforme,
+                ),
+                const SizedBox(height: 10),
+              ],
+            ),
+          );
+        },
       ),
     );
   }

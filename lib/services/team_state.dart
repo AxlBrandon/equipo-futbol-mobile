@@ -3,6 +3,30 @@ import '../models/match_model.dart';
 import '../models/player.dart';
 import 'api_service.dart';
 
+class PastMatch {
+  final String opponent;
+  final String opponentLogo;
+  final String matchDate;
+  final String matchLocation;
+  int homeScore;
+  int awayScore;
+  final List<int> confirmedPlayerIds;   // Quienes confirmaron RSVP
+  final List<int> presentPlayerIds;     // Quienes asistieron en cancha
+  final DateTime? matchDateTime;        // Momento en que se programó el partido
+
+  PastMatch({
+    required this.opponent,
+    required this.opponentLogo,
+    required this.matchDate,
+    required this.matchLocation,
+    this.homeScore = 0,
+    this.awayScore = 0,
+    this.confirmedPlayerIds = const [],
+    this.presentPlayerIds = const [],
+    this.matchDateTime,
+  });
+}
+
 class TeamState extends ChangeNotifier {
   static final TeamState _instance = TeamState._internal();
   factory TeamState() => _instance;
@@ -24,21 +48,23 @@ class TeamState extends ChangeNotifier {
     'Cancha Los Álamos',
   ];
 
-  // Partido actual (con sede oficial predeterminada)
+  // Partido actual (inicialmente vacío para que el usuario registre el real)
   MatchModel currentMatch = MatchModel(
     id: 1,
-    opponent: 'Bayern Munich',
-    opponentLogo:
-        'https://upload.wikimedia.org/wikipedia/commons/thumb/1/1b/FC_Bayern_M%C3%BCnchen_logo_%282017%29.svg/200px-FC_Bayern_M%C3%BCnchen_logo_%282017%29.svg.png',
-    matchDate: 'Viernes 23/10/2026',
+    opponent: '',
+    opponentLogo: '',
+    matchDate: 'Sin partido programado',
     matchLocation: mainVenue,
   );
 
-  // Lista de Jugadores (Activos e Inactivos / Dados de baja)
+  // Historial de partidos anteriores
+  List<PastMatch> pastMatches = [];
+
+  // Lista de Jugadores (inicia vacía para meter datos reales)
   List<Player> players = [];
 
   // ID del Jugador que es Capitán en este partido (exclusivo)
-  int? captainPlayerId = 1; // Por defecto: Abraham #3
+  int? captainPlayerId;
 
   // Control de RSVP (Confirmación previa)
   final Map<int, bool> rsvpMap = {};
@@ -59,156 +85,16 @@ class TeamState extends ChangeNotifier {
   final Map<int, double> paidUniforme = {};
 
   void _initializeDefaultData() {
-    // 14 Jugadores de tu tabla real + jugadores de baja de ejemplo
-    players = [
-      Player(
-        id: 1,
-        name: 'Abraham Castillo',
-        jerseyName: 'ABRAHAM',
-        jerseyNumber: 3,
-        phoneNumber: '55 1298 3401',
-        photoUrl: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80',
-        isCaptain: true,
-      ),
-      Player(
-        id: 2,
-        name: 'Alejandro Morales',
-        jerseyName: 'ALEJANDRO',
-        jerseyNumber: 30,
-        phoneNumber: '55 8734 1122',
-      ),
-      Player(
-        id: 3,
-        name: 'Angel Ruiz',
-        jerseyName: 'ANGEL',
-        jerseyNumber: 14,
-        phoneNumber: '55 9012 3456',
-      ),
-      Player(
-        id: 4,
-        name: 'Antonio Gallardo',
-        jerseyName: 'GALLARDO',
-        jerseyNumber: 59,
-        phoneNumber: '55 6745 2389',
-      ),
-      Player(
-        id: 5,
-        name: 'Armando Perez',
-        jerseyName: 'ARMANDO',
-        jerseyNumber: 13,
-        phoneNumber: '55 4321 9876',
-      ),
-      Player(
-        id: 6,
-        name: 'Brandon Montiel',
-        jerseyName: 'BRANDON',
-        jerseyNumber: 10,
-        phoneNumber: '55 3344 5566',
-        photoUrl: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=150&q=80',
-      ),
-      Player(
-        id: 7,
-        name: 'Cesar Lopez',
-        jerseyName: 'CESAR',
-        jerseyNumber: 6,
-        phoneNumber: '55 7890 1234',
-      ),
-      Player(
-        id: 8,
-        name: 'Cristian Sanchez',
-        jerseyName: 'CRISTIAN',
-        jerseyNumber: 100,
-        phoneNumber: '55 2211 4433',
-      ),
-      Player(
-        id: 9,
-        name: 'Cristian Jr',
-        jerseyName: 'GAEL',
-        jerseyNumber: 10,
-        phoneNumber: '55 6677 8899',
-      ),
-      Player(
-        id: 10,
-        name: 'Daniel Ortiz',
-        jerseyName: 'DANIEL',
-        jerseyNumber: 31,
-        phoneNumber: '55 9988 7766',
-      ),
-      Player(
-        id: 11,
-        name: 'Emiliano Salcido',
-        jerseyName: 'SALCIDO',
-        jerseyNumber: 7,
-        phoneNumber: '55 4455 6677',
-      ),
-      Player(
-        id: 12,
-        name: 'Joshua Gutierrez',
-        jerseyName: 'JOSH',
-        jerseyNumber: 1,
-        phoneNumber: '55 5566 7788',
-        photoUrl: 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?auto=format&fit=crop&w=150&q=80',
-      ),
-      Player(
-        id: 13,
-        name: 'Alberto Ramos',
-        jerseyName: 'ALBERTO',
-        jerseyNumber: 0,
-        phoneNumber: '55 1122 3344',
-      ),
-      Player(
-        id: 14,
-        name: 'Ray Reglin',
-        jerseyName: 'REGLIN',
-        jerseyNumber: 17,
-        phoneNumber: '55 9876 5432',
-      ),
-      // Jugadores dados de baja (para visualizar en el módulo de perfil)
-      Player(
-        id: 15,
-        name: 'Santiago Morales',
-        jerseyName: 'SANTI',
-        jerseyNumber: 22,
-        phoneNumber: '55 8899 0011',
-        status: 'INACTIVO',
-        lastMatchInfo: '10/09/2026 (Dado de baja)',
-      ),
-      Player(
-        id: 16,
-        name: 'Rodrigo Nava',
-        jerseyName: 'RODRIGO',
-        jerseyNumber: 8,
-        phoneNumber: '55 7766 5544',
-        status: 'INACTIVO',
-        lastMatchInfo: '03/09/2026 (Dado de baja)',
-      ),
-    ];
-
-    // Por requerimiento del usuario:
-    // Inscripción ($100), Horario ($100) y Uniforme ($300) inician 100% CUBIERTOS (VERDE)
-    for (var p in players) {
-      final pid = p.id!;
-      paidInscripcion[pid] = feeInscripcion; // $100 -> Verde
-      paidHorario[pid] = feeHorario;         // $100 -> Verde
-      paidUniforme[pid] = feeUniforme;       // $300 -> 100% CUBIERTO (VERDE)
-    }
-
-    // Confirmaciones RSVP iniciales
-    rsvpMap[1] = true;
-    rsvpMap[6] = true;
-    rsvpMap[8] = true;
-    rsvpMap[10] = true;
-    rsvpMap[12] = true;
-
-    // Asistencias iniciales en cancha
-    attendedMap[1] = true;
-    paidArbitraje[1] = 50.0; // Abraham asistió y pagó arbitraje completo -> Verde
-
-    attendedMap[12] = true;
-    paidArbitraje[12] = 25.0; // Joshua asistió y dio abono de $25 -> Naranja
-
-    attendedMap[6] = true;
-    paidArbitraje[6] = 0.0; // Brandon asistió y no ha pagado arbitraje -> Rojo
+    // Todos los datos de prueba han sido removidos.
+    // La app inicia limpia para registrar plantilla y partidos reales.
+    players = [];
+    rsvpMap.clear();
+    attendedMap.clear();
+    paidArbitraje.clear();
+    paidInscripcion.clear();
+    paidHorario.clear();
+    paidUniforme.clear();
+    captainPlayerId = null;
   }
 
   // Sincronización segura con el backend
@@ -338,9 +224,11 @@ class TeamState extends ChangeNotifier {
       photoBase64: player.photoBase64,
     );
     players.add(newP);
-    paidInscripcion[newId] = feeInscripcion;
-    paidHorario[newId] = feeHorario;
-    paidUniforme[newId] = feeUniforme; // Uniforme cubierto también para nuevos ingresos
+    // Nuevos jugadores inician con montos en 0 para cubrir según corresponda
+    paidInscripcion[newId] = 0.0;
+    paidHorario[newId] = 0.0;
+    paidUniforme[newId] = 0.0;
+    paidArbitraje[newId] = 0.0;
 
     ApiService.createPlayer(newP);
     notifyListeners();
@@ -370,7 +258,44 @@ class TeamState extends ChangeNotifier {
     }
   }
 
-  void updateMatch(MatchModel newMatch) {
+  // Archivar partido actual al historial
+  void archiveCurrentMatchAsPast({DateTime? matchDateTime}) {
+    if (currentMatch.opponent.trim().isNotEmpty) {
+      final confirmedIds = rsvpMap.entries.where((e) => e.value).map((e) => e.key).toList();
+      final presentIds = attendedMap.entries.where((e) => e.value).map((e) => e.key).toList();
+      pastMatches.insert(
+        0,
+        PastMatch(
+          opponent: currentMatch.opponent,
+          opponentLogo: currentMatch.opponentLogo,
+          matchDate: currentMatch.matchDate,
+          matchLocation: currentMatch.matchLocation,
+          homeScore: 0,
+          awayScore: 0,
+          confirmedPlayerIds: confirmedIds,
+          presentPlayerIds: presentIds,
+          matchDateTime: matchDateTime,
+        ),
+      );
+      rsvpMap.clear();
+      attendedMap.clear();
+      captainPlayerId = null;
+      notifyListeners();
+    }
+  }
+
+  void updatePastMatchScore(int index, int homeScore, int awayScore) {
+    if (index >= 0 && index < pastMatches.length) {
+      pastMatches[index].homeScore = homeScore;
+      pastMatches[index].awayScore = awayScore;
+      notifyListeners();
+    }
+  }
+
+  void updateMatch(MatchModel newMatch, {DateTime? previousMatchDateTime}) {
+    if (currentMatch.opponent.trim().isNotEmpty && currentMatch.opponent != newMatch.opponent) {
+      archiveCurrentMatchAsPast(matchDateTime: previousMatchDateTime);
+    }
     currentMatch = newMatch;
     notifyListeners();
   }

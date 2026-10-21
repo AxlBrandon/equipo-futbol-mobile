@@ -5,6 +5,7 @@ class MatchModel {
   String matchDate;
   String matchLocation;
   bool isUpcoming;
+  DateTime? matchDateTime;
 
   MatchModel({
     this.id,
@@ -13,6 +14,7 @@ class MatchModel {
     required this.matchDate,
     required this.matchLocation,
     this.isUpcoming = true,
+    this.matchDateTime,
   });
 }
 
