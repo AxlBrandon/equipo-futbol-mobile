@@ -16,6 +16,26 @@ class MatchModel {
     this.isUpcoming = true,
     this.matchDateTime,
   });
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'opponent': opponent,
+    'opponentLogo': opponentLogo,
+    'matchDate': matchDate,
+    'matchLocation': matchLocation,
+    'isUpcoming': isUpcoming,
+    'matchDateTime': matchDateTime?.toIso8601String(),
+  };
+
+  factory MatchModel.fromJson(Map<String, dynamic> json) => MatchModel(
+    id: json['id'],
+    opponent: json['opponent'] ?? '',
+    opponentLogo: json['opponentLogo'] ?? '',
+    matchDate: json['matchDate'] ?? '',
+    matchLocation: json['matchLocation'] ?? '',
+    isUpcoming: json['isUpcoming'] ?? true,
+    matchDateTime: json['matchDateTime'] != null ? DateTime.tryParse(json['matchDateTime']) : null,
+  );
 }
 
 class InternationalClub {

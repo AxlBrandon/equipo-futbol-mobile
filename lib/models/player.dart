@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 import 'package:flutter/widgets.dart';
 
 class Player {
@@ -9,9 +10,13 @@ class Player {
   String phoneNumber; // Número de teléfono del jugador
   String status; // 'ACTIVO' o 'INACTIVO' (Dado de baja)
   String? photoUrl;
-  String? photoBase64;
+  String? _photoBase64;
   String? lastMatchInfo;
   bool isCaptain;
+
+  // Caché de imagen en memoria para renderizado ultra rápido a 60-120fps sin recodificar en cada build
+  Uint8List? _cachedBytes;
+  ImageProvider? _cachedAvatar;
 
   Player({
     this.id,
@@ -21,24 +26,39 @@ class Player {
     this.phoneNumber = '55 1234 5678',
     this.status = 'ACTIVO',
     this.photoUrl,
-    this.photoBase64,
-    this.lastMatchInfo = '23/10/2026 vs Bayern Munich',
+    String? photoBase64,
+    this.lastMatchInfo = 'Sin partido registrado',
     this.isCaptain = false,
   }) {
+    _photoBase64 = photoBase64;
     if (jerseyName.isEmpty) {
       final parts = name.trim().split(' ');
       jerseyName = parts.isNotEmpty ? parts.first.toUpperCase() : '';
     }
   }
 
+  String? get photoBase64 => _photoBase64;
+  set photoBase64(String? val) {
+    if (_photoBase64 != val) {
+      _photoBase64 = val;
+      _cachedBytes = null;
+      _cachedAvatar = null;
+    }
+  }
+
   ImageProvider? get avatarImage {
-    if (photoBase64 != null && photoBase64!.isNotEmpty) {
+    if (_cachedAvatar != null) return _cachedAvatar;
+
+    if (_photoBase64 != null && _photoBase64!.isNotEmpty) {
       try {
-        return MemoryImage(base64Decode(photoBase64!));
+        _cachedBytes ??= base64Decode(_photoBase64!);
+        _cachedAvatar = MemoryImage(_cachedBytes!);
+        return _cachedAvatar;
       } catch (_) {}
     }
     if (photoUrl != null && photoUrl!.isNotEmpty) {
-      return NetworkImage(photoUrl!);
+      _cachedAvatar = NetworkImage(photoUrl!);
+      return _cachedAvatar;
     }
     return null;
   }
@@ -53,7 +73,7 @@ class Player {
       status: json['status'] ?? 'ACTIVO',
       photoUrl: json['photoUrl'],
       photoBase64: json['photoBase64'] ?? json['photoData'],
-      lastMatchInfo: json['lastMatchInfo'] ?? '23/10/2026 vs Bayern Munich',
+      lastMatchInfo: json['lastMatchInfo'] ?? 'Sin partido registrado',
       isCaptain: json['isCaptain'] ?? false,
     );
   }
@@ -67,7 +87,7 @@ class Player {
       'phoneNumber': phoneNumber,
       'status': status,
       'photoUrl': photoUrl,
-      'photoBase64': photoBase64,
+      'photoBase64': _photoBase64,
       'lastMatchInfo': lastMatchInfo,
       'isCaptain': isCaptain,
     };

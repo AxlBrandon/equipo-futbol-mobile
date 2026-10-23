@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:equipo_futbol_mobile/services/team_search_service.dart';
 import 'package:flutter/material.dart';
@@ -1037,6 +1039,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final numberCtrl = TextEditingController();
     final phoneCtrl = TextEditingController(text: '55 ');
     String? pickedBase64;
+    Uint8List? pickedBytes;
 
     showModalBottomSheet(
       context: context,
@@ -1087,10 +1090,10 @@ class _HomeScreenState extends State<HomeScreen> {
                       CircleAvatar(
                         radius: 40,
                         backgroundColor: const Color(0xFFF1F5F9),
-                        backgroundImage: pickedBase64 != null
-                            ? MemoryImage(base64Decode(pickedBase64!))
+                        backgroundImage: pickedBytes != null
+                            ? MemoryImage(pickedBytes!)
                             : null,
-                        child: pickedBase64 == null
+                        child: pickedBytes == null
                             ? const Icon(
                                 Icons.person,
                                 size: 45,
@@ -1103,9 +1106,13 @@ class _HomeScreenState extends State<HomeScreen> {
                         right: 0,
                         child: GestureDetector(
                           onTap: () => _pickPhotoSheet(context, (base64) {
-                            setDialogState(() {
-                              pickedBase64 = base64;
-                            });
+                            try {
+                              final bytes = base64Decode(base64);
+                              setDialogState(() {
+                                pickedBase64 = base64;
+                                pickedBytes = bytes;
+                              });
+                            } catch (_) {}
                           }),
                           child: Container(
                             padding: const EdgeInsets.all(7),
@@ -1276,7 +1283,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 Navigator.pop(ctx);
                 final xfile = await _picker.pickImage(
                   source: ImageSource.camera,
-                  maxWidth: 600,
+                  maxWidth: 500,
+                  maxHeight: 500,
+                  imageQuality: 75,
                 );
                 if (xfile != null) {
                   final bytes = await xfile.readAsBytes();
@@ -1294,7 +1303,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 Navigator.pop(ctx);
                 final xfile = await _picker.pickImage(
                   source: ImageSource.gallery,
-                  maxWidth: 600,
+                  maxWidth: 500,
+                  maxHeight: 500,
+                  imageQuality: 75,
                 );
                 if (xfile != null) {
                   final bytes = await xfile.readAsBytes();
@@ -1614,6 +1625,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     List<TeamSuggestion> searchResults = [];
     bool isLoading = false;
+    Timer? searchDebounce;
 
     // Helper para formatear la fecha seleccionada al estilo "Viernes 30/10/2026 • 8:00 PM"
     String formatMatchDateTime(DateTime date, TimeOfDay time) {
@@ -1678,10 +1690,12 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     const SizedBox(height: 10),
 
-                    // Barra de búsqueda en tiempo real conectada al servicio web
+                    // Barra de búsqueda en tiempo real conectada al servicio web con respuesta instantánea
                     TextField(
-                      onChanged: (val) async {
-                        if (val.length < 3) {
+                      onChanged: (val) {
+                        searchDebounce?.cancel();
+                        final clean = val.trim().toLowerCase();
+                        if (clean.length < 2) {
                           setMatchState(() {
                             searchResults = [];
                             isLoading = false;
@@ -1689,17 +1703,27 @@ class _HomeScreenState extends State<HomeScreen> {
                           return;
                         }
 
+                        // Respuesta inmediata con catálogo local (0 ms)
+                        final quickMatches = popularClubs
+                            .where((c) => c.name.toLowerCase().contains(clean))
+                            .map((c) => TeamSuggestion(name: c.name, badgeUrl: c.logoUrl))
+                            .toList();
+                        if (quickMatches.isNotEmpty) {
+                          setMatchState(() {
+                            searchResults = quickMatches;
+                          });
+                        }
+
                         setMatchState(() {
                           isLoading = true;
                         });
 
-                        final results = await TeamSearchService.searchTeams(
-                          val,
-                        );
-
-                        setMatchState(() {
-                          searchResults = results;
-                          isLoading = false;
+                        searchDebounce = Timer(const Duration(milliseconds: 300), () async {
+                          final results = await TeamSearchService.searchTeams(val);
+                          setMatchState(() {
+                            searchResults = results;
+                            isLoading = false;
+                          });
                         });
                       },
                       decoration: InputDecoration(
@@ -2080,6 +2104,12 @@ class _HomeScreenState extends State<HomeScreen> {
     );
     final phoneCtrl = TextEditingController(text: player.phoneNumber);
     String? currentBase64 = player.photoBase64;
+    Uint8List? editBytes;
+    if (currentBase64 != null) {
+      try {
+        editBytes = base64Decode(currentBase64);
+      } catch (_) {}
+    }
 
     showModalBottomSheet(
       context: context,
@@ -2112,11 +2142,11 @@ class _HomeScreenState extends State<HomeScreen> {
                     CircleAvatar(
                       radius: 38,
                       backgroundColor: const Color(0xFFF1F5F9),
-                      backgroundImage: currentBase64 != null
-                          ? MemoryImage(base64Decode(currentBase64!))
+                      backgroundImage: editBytes != null
+                          ? MemoryImage(editBytes!)
                           : player.avatarImage,
                       child:
-                          (currentBase64 == null && player.avatarImage == null)
+                          (editBytes == null && player.avatarImage == null)
                           ? const Icon(
                               Icons.person,
                               size: 40,
@@ -2129,9 +2159,13 @@ class _HomeScreenState extends State<HomeScreen> {
                       right: 0,
                       child: GestureDetector(
                         onTap: () => _pickPhotoSheet(context, (base64) {
-                          setEditState(() {
-                            currentBase64 = base64;
-                          });
+                          try {
+                            final bytes = base64Decode(base64);
+                            setEditState(() {
+                              currentBase64 = base64;
+                              editBytes = bytes;
+                            });
+                          } catch (_) {}
                         }),
                         child: Container(
                           padding: const EdgeInsets.all(6),
