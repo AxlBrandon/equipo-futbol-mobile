@@ -1,0 +1,26 @@
+workflows:
+  ios-unsigned-ipa:
+    name: iOS IPA Sin Firma (Sideloadly)
+    max_build_duration: 60
+    instance_type: mac_mini_m2
+    environment:
+      flutter: stable
+      xcode: latest
+      cocoapods: default
+    scripts:
+      - name: Instalar paquetes de Flutter
+        script: |
+          flutter pub get
+      - name: Instalar CocoaPods de iOS
+        script: |
+          find . -name "Podfile" -execdir pod install \;
+      - name: Compilar iOS Release sin firma
+        script: |
+          flutter build ios --release --no-codesign
+      - name: Empaquetar Runner.app en archivo .ipa
+        script: |
+          mkdir -p Payload
+          cp -r build/ios/iphoneos/Runner.app Payload/
+          zip -r -y equipo_futbol.ipa Payload
+    artifacts:
+      - equipo_futbol.ipa
